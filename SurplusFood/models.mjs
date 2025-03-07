@@ -1,11 +1,3 @@
-// SurplusFood
-// ShppingCart
-// Bag
-// - bagType: surprise, regular
-// Establishment
-// Inventory
-// User
-
 // Each bag is specific to an establishment
 function Bag(id, bagType, estId, food) {
     this.id = id;
