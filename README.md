@@ -2,7 +2,7 @@
 
 ## Members
 - s340076 Miglietta Lorenzo
-- s123456 LASTNAME FIRSTNAME
+- s343656 Pedrani Alessandro
 - s123456 LASTNAME FIRSTNAME
 
 # Exercise "NAME OF EXERCISE"
