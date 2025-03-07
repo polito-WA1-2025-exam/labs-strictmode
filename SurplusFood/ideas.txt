@@ -1,0 +1,48 @@
+MAIN OBJECTS: 
+Food                // oggetto specifico per ogni bag
+    ID
+    Name
+    quantity
+
+
+bag
+    ID
+    estID
+    bagType         // regular/surprise
+    items           // array of Food
+    price
+
+
+establishment
+    ID
+    Type
+    Name
+    Address
+    bags            // array of bags     
+
+
+user
+    ID
+    firstName
+    lastName
+    email
+    password
+
+
+cart
+    ID
+    userID
+    bags            // array of bags (must check estID)
+    totAmount       // sum of bag prices
+
+
+reservation
+    ID
+    userID
+    estID
+    bagID
+    createdAt        // momento in cui viene fatto l'ordine
+    startAt          // inizio range per pick up
+    endAt            // fine range per pick up
+    
+
