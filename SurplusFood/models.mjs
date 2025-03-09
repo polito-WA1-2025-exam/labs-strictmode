@@ -1,3 +1,6 @@
+import dayjs from 'dayjs';
+
+
 // Each bag is specific to an establishment
 function Bag(id, bagType, estId, food) {
     this.id = id;                               //id of the bag
@@ -23,10 +26,12 @@ function Reservation(id, userId, createdAt, startAt, endAt) {
     this.id = id;                                   //reservation id
     this.userId = userId;                           //users's id of the users who made the reservation
     this.estId = estId;                             //establishment id of the establishment supplying the reserved bag
-    this.createdAt = createdAt;                     //timestamp when the order is created
-    this.startAt = startAt;                         //timestamp when pick up range starts
-    this.endAt = endAt;                             //timestamp when pick up range ends
-                                                    //pickup range = [startAt ; endAt]
+
+    //Timestamps format: ISO-8061 format: YYYY-MM-DD HH:mm:ss
+    this.createdAt = dayjs(createdAt).format('YYYY-MM-DD HH:mm:ss');;               //timestamp when the order is created
+    this.startAt = dayjs(startAt).format('YYYY-MM-DD HH:mm:ss');;                   //timestamp when pick up range starts
+    this.endAt = dayjs(endAt).format('YYYY-MM-DD HH:mm:ss');                        //timestamp when pick up range ends
+                                                                                    //pickup range = [startAt ; endAt]
 }
 function Cart(id, userId, bags) {
     this.id = id;                                   //cart id      
@@ -66,5 +71,23 @@ function Reservations() {
     this.getById = (resId) => {
         //function to get the reservation having the specified resId
         return this.list.filter(x => x.id === resId);
+    }
+
+    this.getCreatedAt_ByDay = (day) => {
+        //Return all the reservation created at the specified day indicated as YYYY-MM-DD
+        //the argument day should be specified as YYYY-MM-DD and the check will be done from year to day
+        return this.list.filter(r => r.createdAt.isSame(day, 'day'));
+    }
+
+    this.getStartAt_ByDay = (day) => {
+        //Return all the reservation started at the specified day indicated as YYYY-MM-DD
+        //the argument day should be specified as YYYY-MM-DD and the check will be done from year to day
+        return this.list.filter(r => r.startAt.isSame(day, 'day'));
+    }
+
+    this.getEndAt_ByDay = (day) => {
+        //Return all the reservation ended at the specified day indicated as YYYY-MM-DD
+        //the argument day should be specified as YYYY-MM-DD and the check will be done from year to day
+        return this.list.filter(r => r.endAt.isSame(day, 'day'));
     }
 }
