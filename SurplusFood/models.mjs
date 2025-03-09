@@ -42,7 +42,29 @@ function Cart(id, userId, bags) {
 
 
 function Reservations() {
+
+    //Container Class for managing the reservations
+
+
     this.list = []
 
+    this.add = (reservation) => {
+        //function to add a new reservation to the list of reservations
+        this.list.push(reservation);
+    }
 
+    this.getByUser = (userId) => {
+        //function to get the overall reservations for the user
+        return this.list.filter(x => x.userId === userId);
+    }
+
+    this.getByEstablishment = (estId) => {
+        //function to get the overall reservations of bags supplied by the establishment
+        return this.list.filter(x => x.estId === estId);
+    }
+
+    this.getById = (resId) => {
+        //function to get the reservation having the specified resId
+        return this.list.filter(x => x.id === resId);
+    }
 }
