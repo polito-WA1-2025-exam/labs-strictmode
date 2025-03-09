@@ -4,6 +4,7 @@
 - s340076 Miglietta Lorenzo
 - s343656 Pedrani Alessandro
 - s338856 Carloni Michele
+- s339423 Revalor Riccardo
 
 # Exercise "NAME OF EXERCISE"
 
