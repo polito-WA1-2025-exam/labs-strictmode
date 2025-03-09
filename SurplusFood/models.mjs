@@ -35,8 +35,8 @@ function Cart(id, userId, bags) {
 
     this.totPrice = () => {
         //function to return the total price considering all the added bags
-        
-        return this.bags.reduce((acc, el) => accl + el, 0)
+
+        return this.bags.reduce((acc, el) => acc + el, 0)
     }
 }
 
