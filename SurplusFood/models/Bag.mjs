@@ -1,16 +1,15 @@
 import dayjs from 'dayjs';
 
 class Bag {
-    constructor(id, bagType, estId, food, price, pickUpDays, status ="not taken") {
+    constructor(id, bagType, estId, food, price, pickupTimeStart, pickupTimeEnd, status ="not taken") {
         this.id = id;
         this.bagType = bagType;
         this.estId = estId;
         this.food = food;
         this.price = price; 
         this.status = status;
-        this.pickUpDays = dayjs(pickUpDays, 'day').format('YYYY-MM-DD HH:mm:ss');
-        this.bagItems = [];
-
+        this.pickupTimeStart = dayjs(pickupTimeStart).format('YYYY-MM-DD HH:mm:ss');
+        this.pickupTimeEnd = dayjs(pickupTimeEnd).format('YYYY-MM-DD HH:mm:ss');
     }
 
 
