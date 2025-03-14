@@ -1,4 +1,4 @@
-class Food {
+class BagItem {
      constructor(id, name, quantity, bagId) {
         this.id = id;
         this.name = name;
@@ -7,4 +7,4 @@ class Food {
     }
 }
 
-export default Food;
+export default BagItem;
