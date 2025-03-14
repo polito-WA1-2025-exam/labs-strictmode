@@ -1,24 +1,24 @@
 import dayjs from 'dayjs';
 
 class Bag {
-    constructor(id, bagType, estId, food, price, pickupTimeStart, pickupTimeEnd, status ="not taken") {
+    constructor(id, bagType, estId, price, pickupTimeStart, pickupTimeEnd, status ="not taken", []) {
         this.id = id;
         this.bagType = bagType;
         this.estId = estId;
-        this.food = food;
         this.price = price; 
         this.status = status;
+        this.listFood = [];
         this.pickupTimeStart = dayjs(pickupTimeStart).format('YYYY-MM-DD HH:mm:ss');
         this.pickupTimeEnd = dayjs(pickupTimeEnd).format('YYYY-MM-DD HH:mm:ss');
     }
 
 
 
-    addBagItem(bagItem) {
+    addListFood(food) {
         //Returns true if success, otherwise false
 
         if (this.bagType.toLowerCase() === "regular") {
-            this.bagItems.push(bagItem);
+            this.listFood.push(food);
             return true;
         }
 
@@ -28,8 +28,10 @@ class Bag {
     }
 
 
-    removeBagItem(bagItemId){
+    removeListFood(food){
         //Returns true if success, otherwise false
+
+        foodId = food.id;
 
         if (this.bagType.toLowerCase === "regular"){
             if (this.removedItems.length >= 2) {
@@ -39,14 +41,14 @@ class Bag {
 
             //retrieve the index of the items to be removed
 
-            const idx = this.bagItems.findIndex(x => x.id === bagItemId);
+            const idx = this.bagItems.findIndex(x => x.id === foodId);
 
             if (idx == -1){
                 console.log("Item not found");
                 return false;
             } 
 
-            this.bagItems.splice(idx, 1)[0];
+            this.listFood.splice(idx, 1)[0];
             return true;
         } else {
             console.log("Bag type must be regular to remove items from the bag")

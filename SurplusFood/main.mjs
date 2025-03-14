@@ -4,6 +4,7 @@ import Establishment from "./models/Establishment.mjs";
 import Reservation from "./models/Reservation.mjs";
 import Cart from "./models/Cart.mjs";
 import Reservations from "./models/Reservations.mjs";
+import Food from "./models/Food.mjs";
 
 
 //Example to test the models
