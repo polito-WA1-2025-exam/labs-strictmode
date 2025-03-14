@@ -1,10 +1,8 @@
 import dayjs from 'dayjs';
 
-
+/** A Bag is managed by an establishment. 
+ * It can be reserved by a single user at a time */ 
 class Bag {
-    static STATUS_NOT_TAKEN = "not taken";
-    static STATUS_TAKEN = "taken";
-
     static TYPE_SURPRISE = "surprise";
     static TYPE_REGULAR = "regular";
 
@@ -18,18 +16,18 @@ class Bag {
      * @param {number} price - The price of the bag.
      * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
      * @param {string} pickupTimeEnd - The end time for pickup in ISO 8601 format.
-     * @param {string} [status=Bag.STATUS_NOT_TAKEN] - The status of the bag.
      * @param {Array} items - The items in the bag.
      */
-    constructor(id, bagType, estId, price, pickupTimeStart, pickupTimeEnd, status=Bag.STATUS_NOT_TAKEN) {
+    constructor(id, bagType, estId, price, pickupTimeStart, pickupTimeEnd) {
         this.id = id;
         this.bagType = bagType;
         this.estId = estId;
         this.price = price; 
-        this.status = status;
         this.items = [];
-        this.pickupTimeStart = dayjs(pickupTimeStart).format('YYYY-MM-DD HH:mm:ss');
-        this.pickupTimeEnd = dayjs(pickupTimeEnd).format('YYYY-MM-DD HH:mm:ss');
+        this.pickupTimeStart = dayjs(pickupTimeStart);
+        this.pickupTimeEnd = dayjs(pickupTimeEnd);
+
+        this.reservedBy = null;
     }
 
 
@@ -47,34 +45,17 @@ class Bag {
         return false;
     }
 
-
-    removeItem(item){
-        //Returns true if success, otherwise false
-
-        itemId = item.id;
-
-        if (this.bagType.toLowerCase === "regular"){
-            if (this.removedItems.length >= 2) {
-                console.log("Maximum limit of removable items exceeded");
-                return false;
-            }
-
-            //retrieve the index of the items to be removed
-
-            const idx = this.bagItems.findIndex(x => x.id === itemId);
-
-            if (idx == -1){
-                console.log("Item not found");
-                return false;
-            } 
-
-            this.items.splice(idx, 1)[0];
-            return true;
-        } else {
-            console.log("Bag type must be regular to remove items from the bag")
-            return false;
+    setReservedBy(userId){
+        if (this.reservedBy != null){
+            throw new Error("Bag already reserved");
         }
-
+        this.reservedBy = userId;
+    }
+    getReservedBy() {
+        return this.reservedBy;
+    }
+    isReserved() {
+        return this.reservedBy !== null;
     }
 }
 

@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import Reservation from './Reservation.mjs';
 
 class Reservations {
     constructor() {
@@ -31,6 +32,10 @@ class Reservations {
 
     getEndAt_ByDay(day) {
         return this.list.filter(res => dayjs(res.endAt).isSame(day, 'day'));
+    }
+
+    validateOneBagPerEstablishmentPerDay(userId, bag) {
+        // TODO: Implement this method, or maybe enforce the invariant at the database level?
     }
 }
 
