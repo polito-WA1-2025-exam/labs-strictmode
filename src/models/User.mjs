@@ -1,10 +1,19 @@
+/**
+ * Represents a User.
+ * @class
+ */
 class User {
-    constructor(id, email, assignedName, familyName, allergies) {
+    /**
+     * @param {number} id
+     * @param {string} email
+     * @param {string} assignedName
+     * @param {string} familyName
+     */
+    constructor(id, email, assignedName, familyName) {
         this.id = id;
         this.email = email;
         this.assignedName = assignedName;
         this.familyName = familyName;
-        this.allergies = allergies;
     }
 }
 

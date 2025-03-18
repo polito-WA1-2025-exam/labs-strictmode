@@ -7,8 +7,6 @@ class Bag {
     static TYPE_REGULAR = "regular";
 
     /**
-     * Creates an instance of Bag.
-     * 
      * @constructor
      * @param {number} id - Unique identifier for the bag.
      * @param {string} bagType - Type of the bag (e.g., "regular", "surprise").
@@ -16,9 +14,8 @@ class Bag {
      * @param {number} price - The price of the bag.
      * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
      * @param {string} pickupTimeEnd - The end time for pickup in ISO 8601 format.
-     * @param {Array} items - The items in the bag.
      */
-    constructor(id, bagType, estId, price, pickupTimeStart, pickupTimeEnd) {
+    constructor(id, bagType, estId, price, pickupTimeStart, pickupTimeEnd, reservedBy = null) {
         this.id = id;
         this.bagType = bagType;
         this.estId = estId;
@@ -27,7 +24,7 @@ class Bag {
         this.pickupTimeStart = dayjs(pickupTimeStart);
         this.pickupTimeEnd = dayjs(pickupTimeEnd);
 
-        this.reservedBy = null;
+        this.reservedBy = reservedBy;
     }
 
 
@@ -45,15 +42,6 @@ class Bag {
         return false;
     }
 
-    setReservedBy(userId){
-        if (this.reservedBy != null){
-            throw new Error("Bag already reserved");
-        }
-        this.reservedBy = userId;
-    }
-    getReservedBy() {
-        return this.reservedBy;
-    }
     isReserved() {
         return this.reservedBy !== null;
     }
