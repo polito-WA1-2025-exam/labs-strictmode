@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import Bag from './Bag.mjs';
 
-class Reservation {
+export class Reservation {
     constructor(id, user, cartItem) {
         this.id = id;
         this.user = user;

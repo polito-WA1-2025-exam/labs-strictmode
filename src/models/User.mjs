@@ -2,7 +2,7 @@
  * Represents a User.
  * @class
  */
-class User {
+export class User {
     /**
      * @param {number} id
      * @param {string} email

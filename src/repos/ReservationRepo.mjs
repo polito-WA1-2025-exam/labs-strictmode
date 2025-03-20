@@ -1,6 +1,6 @@
 import Reservation from "../models/Reservation.mjs";
 
-class ReservationRepo {
+export class ReservationRepo {
     /**
      * Creates a new reservation for each cart item.
      * If any of the cart items cannot be reserved, no reservations should be created.

@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 
 /** A Bag is managed by an establishment. 
  * It can be reserved by a single user at a time */ 
-class Bag {
+export class Bag {
     static TYPE_SURPRISE = "surprise";
     static TYPE_REGULAR = "regular";
 

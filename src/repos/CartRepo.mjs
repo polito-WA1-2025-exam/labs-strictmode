@@ -3,7 +3,7 @@ import Cart from "../models/Cart.mjs";
 /**
  * Class representing a repository for managing a shopping cart.
  */
-class CartRepo {
+export class CartRepo {
     constructor() {
     }
     

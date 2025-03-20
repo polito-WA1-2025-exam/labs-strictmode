@@ -1,4 +1,4 @@
-class UserRepo {
+export class UserRepo {
     /**
      * @param {string} email
      * @param {string} assignedName

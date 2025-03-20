@@ -1,6 +1,6 @@
 import Bag from "../models/Bag.mjs";
 
-class BagRepo {
+export class BagRepo {
     /** 
      * Creates a new empty bag.
      * @param {Bag} bagType - Type of the bag (e.g., "regular", "surprise").
