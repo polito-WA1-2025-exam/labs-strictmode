@@ -1,0 +1,29 @@
+# home of the server [GET Method]
+GET http://localhost:3001/
+
+
+###
+
+#Get all the reservations [GET Method]
+GET http://localhost:3001/reservations
+Content-Type: application/json
+
+
+###
+
+#Make a new reservation [POST Method]
+POST http://localhost:3001/reservations
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "bagIds": [1, 2]
+}
+
+
+###
+
+#Delete a reservation made by the user [GET Method]
+
+DELETE http://localhost:3001/reservations/1
+Content-Type: application/json
