@@ -5,6 +5,7 @@
 - s343656 Pedrani Alessandro
 - s338856 Carloni Michele
 - s339423 Revalor Riccardo
+- s343452 Gontero Diana
 
 # Exercise "NAME OF EXERCISE"
 
