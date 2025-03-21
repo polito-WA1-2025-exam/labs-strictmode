@@ -1,5 +1,5 @@
 export class EstablishmentRepo {
-    createEstablishment(name, estType) {}
-    getEstablishment(estId) {}
-    listAllEstablishments() {}
+    async createEstablishment(name, estType) {}
+    async getEstablishment(estId) {}
+    async listAllEstablishments() {}
 }
