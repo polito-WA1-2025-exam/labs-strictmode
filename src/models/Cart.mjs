@@ -28,6 +28,10 @@ export class Cart {
         this.items.push(cartItem);
         return cartItem;
     }
+
+    returnCartItems() {
+        return this.items;
+    }
 }
 
 export default Cart;

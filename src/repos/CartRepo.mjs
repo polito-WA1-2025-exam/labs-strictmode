@@ -22,7 +22,7 @@ export class CartRepo {
     removeBag(userId, bagId) {}
 
     /**
-     * Returns an object with all the items in the user's cart.
+     * Returns an object with all the items (=bags) in the user's cart.
      * @param {number} userId
      * @returns {Cart}
      */

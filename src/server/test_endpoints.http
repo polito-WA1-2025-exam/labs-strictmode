@@ -4,6 +4,16 @@ GET http://localhost:3001/
 
 ###
 
+#Test0: /reservations [POST]
+POST http://localhost:3001/reservations
+Content-Type: application/json
+
+{
+  "userId": 1
+}
+
+
+### 
 #Get all the reservations [GET Method]
 GET http://localhost:3001/reservations
 Content-Type: application/json
