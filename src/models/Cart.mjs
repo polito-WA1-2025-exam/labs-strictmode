@@ -2,7 +2,7 @@ import CartItem from "./CartItem.mjs";
 
 /** A class may contain multiple personalized bags, CartItems.
  * No more than one bag per establishment per day can be added to the cart. */
-class Cart {
+export class Cart {
     constructor(userId) {
         this.userId = userId;
         this.items = [];

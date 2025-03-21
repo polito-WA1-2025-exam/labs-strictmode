@@ -1,4 +1,4 @@
-class BagItem {
+export class BagItem {
     /**
      * @param {number} bagId
      * @param {number} id - Unique id for the item. Unique within the bag.

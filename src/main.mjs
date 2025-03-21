@@ -1,11 +1,4 @@
-import Bag from "./models/Bag.mjs";
-import User from "./models/User.mjs";
-import Establishment from "./models/Establishment.mjs";
-import Reservation from "./models/Reservation.mjs";
-import Cart from "./models/Cart.mjs";
-import Reservations from "./models/Reservations.mjs";
-import BagItem from "./models/BagItem.mjs";
-import CartItem from "./models/CartItem.mjs";
+import {Bag, User, Establishment, Reservation, Cart, BagItem, CartItem} from "./models/index.mjs";
 import assert from "node:assert/strict";
 
 
@@ -20,11 +13,6 @@ assert.equal(bag1.items.length, 2);
 const est1 = new Establishment(101, "Bakery", [bag1], "store");
 
 const reservation1 = new Reservation(1, user1.id, est1.id, "2025-03-14 11:00:00");
-
-const reservations = new Reservations();
-reservations.add(reservation1);
-
-console.log("User Reservations:", reservations.getByUser(user1.id));
 
 // Cart Tests
 console.log("\n---- CART TESTS ----");

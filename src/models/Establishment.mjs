@@ -1,4 +1,4 @@
-class Establishment {
+export class Establishment {
     constructor(id, name, bags, estType) {
         this.id = id;
         this.name = name;
