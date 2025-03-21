@@ -37,3 +37,17 @@ Content-Type: application/json
 
 DELETE http://localhost:3001/reservations/1
 Content-Type: application/json
+
+
+###
+
+#Create a new user [POST Method]
+POST http://localhost:3001/users
+Content-Type: application/json
+
+{
+  "email": "prova@test.com",
+  "assignedName": "Juve Merda",
+  "familyName": "Granata"
+
+}
