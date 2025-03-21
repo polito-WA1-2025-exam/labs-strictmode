@@ -8,7 +8,7 @@ export class ReservationRepo {
      * @param {Array<number>} cartItems - The IDs of the cart items to be reserved.
      * @returns {Array<Reservation>} - The IDs of the reservations
      */
-    createReservations(userId, cartItems) {
+    async createReservations(userId, cartItems) {
     }
 
     /**
@@ -16,7 +16,7 @@ export class ReservationRepo {
      * @param {number} userId
      * @returns {Array<Reservation>} - The IDs of the reservations
      */
-    listReservationsByUser(userId) {
+    async listReservationsByUser(userId) {
     }
 
     /**
@@ -24,11 +24,11 @@ export class ReservationRepo {
      * @param {number} estId
      * @returns {Array<Reservation>} - The IDs of the reservations
      */
-    listReservationsByEstablishment(estId) {}
+    async listReservationsByEstablishment(estId) {}
 
     /**
      * Cancel a reservation, without deleting it.
      * @param {number} resId - The ID of the reservation to be cancelled.
      */
-    cancelReservation(resId) {}
+    async cancelReservation(resId) {}
 }
