@@ -39,8 +39,3 @@ export class UserRepo {
      */
     getUserById(id) { }
 }
-
-const u1 = new UserRepo();
-
-u1.createUser('carlonimichele3008@gmail.com', 'myPass123', '39', '3475487732', 'Michele', 'Carloni');
-u1.createUser('sandrocumani@gmail.com', 'myPass123', '39', '2475487732', 'Sandro', 'Cumani');

@@ -17,8 +17,3 @@ export class EstablishmentRepo {
     getEstablishment(id) {}
     listAllEstablishments() {}
 }
-
-
-const e1 = new EstablishmentRepo();
-
-e1.createEstablishment('eurospin@gmail.com', 'pass123', 39, 4345353, 'eurospin@yahoo.it', 'eurospin', 'market');
