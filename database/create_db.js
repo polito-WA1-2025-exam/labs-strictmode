@@ -23,22 +23,30 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // Create USER table
       db.run(`CREATE TABLE IF NOT EXISTS USER (
-        UserId INTEGER PRIMARY KEY,
+        userId INTEGER PRIMARY KEY AUTOINCREMENT,
         email VARCHAR(20),
+        password VARCHAR(20),
+        prefixPhoneNumber INTEGER,
+        phoneNumber INTEGER,
         assignedName VARCHAR(20),
         familyName VARCHAR(20)
       )`, handleError);
 
       // Create ESTABLISHMENT table
       db.run(`CREATE TABLE IF NOT EXISTS ESTABLISHMENT (
-        EstId INTEGER PRIMARY KEY,
+        estId INTEGER PRIMARY KEY AUTOINCREMENT,
+        email VARCHAR(20),
+        password VARCHAR(20),
+        prefixPhoneNumber INTEGER,
+        phoneNumber INTEGER,
+        contactEmail VARCHAR(20),
         name VARCHAR(20),
         estType VARCHAR(20)
       )`, handleError);
 
       // Create RESERVATION table (without the BAG reference initially)
       db.run(`CREATE TABLE IF NOT EXISTS RESERVATION (
-        reservationId INTEGER PRIMARY KEY,
+        reservationId INTEGER PRIMARY KEY AUTOINCREMENT,
         userId INTEGER,
         createdAt DATE,
         canceledAt DATE NULL,
@@ -48,7 +56,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // Create BAG table
       db.run(`CREATE TABLE IF NOT EXISTS BAG (
-        bagId VARCHAR(20) PRIMARY KEY,
+        bagId INTEGER PRIMARY KEY AUTOINCREMENT,
         bagType VARCHAR(12),
         estId INTEGER,
         size VARCHAR(20),
@@ -65,7 +73,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // Create BAG_ITEM table
       db.run(`CREATE TABLE IF NOT EXISTS BAG_ITEM (
-        bagId VARCHAR(20),
+        bagId INTEGER,
         itemId INTEGER,
         name VARCHAR(20),
         quantity REAL,
