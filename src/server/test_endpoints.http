@@ -26,8 +26,7 @@ POST http://localhost:3001/reservations
 Content-Type: application/json
 
 {
-  "userId": 1,
-  "bagIds": [1, 2]
+  "userId": 1
 }
 
 
@@ -51,3 +50,28 @@ Content-Type: application/json
   "familyName": "Granata"
 
 }
+
+
+###
+
+
+#Delete a user [DELETE Method]
+DELETE http://localhost:3001/users/1
+
+
+###
+
+#Update a user [PUT Method]
+PUT http://localhost:3001/users/1
+Content-Type: application/json
+
+{
+  "email": "update@update.it",
+  "assignedName": "Prova Update",
+  "familyName": "Granata"
+}
+
+###
+
+#Get user by id [GET Method]
+GET http://localhost:3001/users/1

@@ -31,7 +31,7 @@ const UserRepo_Testing = {
         this.uid++;
     },
 
-    getUserById(id) {
+    async getUserById(id) {
         if (id === 1){
             return this.users[0];
         } else {
@@ -46,10 +46,9 @@ const UserRepo_Testing = {
      * @param {string} familyName
      * @returns {User}
      */
-    createUser(email, assignedName, familyName) { 
+    async createUser(email, assignedName, familyName) { 
         const newUser = new User(this.uid++, email, assignedName, familyName);
         this.users.push(newUser);
-        this.uid++;
         console.log("New user created: ", newUser);
         return newUser;
     },
@@ -58,7 +57,42 @@ const UserRepo_Testing = {
      * @param {number} id
      * @returns {User}
      */
-    updateUser(id, email, assignedName, familyName) { 
+    async updateUser(id, email, assignedName, familyName) { 
+        //update user into the users array
+        for (let i=0; i<this.users.length; i++){
+            if (this.users[i].id === id){
+                this.users[i].email = email;
+                this.users[i].assignedName = assignedName;
+                this.users[i].familyName = familyName;
+
+                return `Updated user with id ${id}: ${email}, ${assignedName}, ${familyName}`;
+            }
+        }
+
+        return "Error: User not found!";
+    },
+
+    //delete user by userid
+    async deleteUser(id) {
+        //delete user from the users array
+        for (let i=0; i<this.users.length; i++){
+            if (this.users[i].id === id){
+                this.users.splice(i, 1);
+                return `Deleted user with id ${id}`;
+            }
+        }
+
+        return "Error: User not found!";
+    },
+
+
+    /**
+     * @param {number} id
+     * @param {string} email
+     * @param {string} assignedName
+     * @param {string} familyName
+     */
+    async updateUser(id, email, assignedName, familyName) { 
         //update user into the users array
         for (let i=0; i<this.users.length; i++){
             if (this.users[i].id === id){
@@ -81,7 +115,7 @@ const CartRepo_Testing = {
     currentBagId: 1,
 
 
-    getCart(userId) {
+    async getCart(userId) {
         //return a new object Cart with the user's cart
         let sampleCart = new Cart(userId);
         //add the 2 bags
@@ -122,7 +156,7 @@ const ReservationRepo_Testing = {
         resId: 1,
         reservations: [],
 
-        createReservations(userId, cartItems) {
+        async createReservations(userId, cartItems) {
             let c = 0;
             for (const cartItem of cartItems) {
                 const reservation = new Reservation(this.resId++, userId, cartItem);
@@ -133,7 +167,7 @@ const ReservationRepo_Testing = {
             return `Created ${c} reservations!`;
         },
 
-        createReservationSingle(userId, cartItem) {
+        async createReservationSingle(userId, cartItem) {
             const reservation = new Reservation(this.resId++, userId, cartItem);
             this.reservations.push(reservation);
 
@@ -141,7 +175,7 @@ const ReservationRepo_Testing = {
 
         },
 
-        cancelReservation(resId) {
+        async cancelReservation(resId) {
             const reservationId = parseInt(resId);
             const index = this.reservations.findIndex(r => r.id === reservationId);
 
@@ -157,7 +191,7 @@ const ReservationRepo_Testing = {
 
         },
 
-        getReservations() {
+        async getReservations() {
             //return all the reservations in json format
             return this.reservations;
 
@@ -208,31 +242,45 @@ server.get('/', (req, res) => {
 /* USER ENDPOINTS */
 
 //user post endpoint: create a new user
-function createUser_Test(userRepo){
-    server.post("/users", (req, res) => {
+async function createUser_Test(userRepo){
+     server.post("/users", async (req, res) => {
         const { email, assignedName, familyName } = req.body;
         
-        const newUser = userRepo.createUser(email, assignedName, familyName);
+        const newUser = await userRepo.createUser(email, assignedName, familyName);
         return res.json(newUser);
     });
 }
 
 //user put endpoint: update a user
 function updateUser_Test(userRepo){
-    server.put("/users/:id", (req, res) => {
+    server.put("/users/:id", async (req, res) => {
+        //convert id to number
+        const id = parseInt(req.params.id);
         const { email, assignedName, familyName } = req.body;
-        const updatedUser = userRepo.updateUser(req.params.id, email, assignedName, familyName);
+        const updatedUser = await userRepo.updateUser(id, email, assignedName, familyName);
         return res.json(updatedUser);
     });
 }
 
 //user get endpoint: get a user by id
-function getUserById_Test(userRepo){
-    server.get("/users/:id", (req, res) => {
-        const user = userRepo.getUserById(req.params.id);
+async function getUserById_Test(userRepo){
+    server.get("/users/:id", async (req, res) => {
+        //convert id to number
+        const id = parseInt(req.params.id);
+        const user = await userRepo.getUserById(id);
         if (!user) {
-            return res.status(404).json({ error: "User not found" });
+            return res.status(404).json("Error: user not found!");
         }
+        return res.json(user);
+    });
+}
+
+//user delete endpoint: delete a user by id
+async function deleteUser_Test(userRepo){
+    server.delete("/users/:id", async (req, res) => {
+        //convert id to number
+        const id = parseInt(req.params.id);
+        const user = await userRepo.deleteUser(id);
         return res.json(user);
     });
 }
@@ -243,9 +291,9 @@ function getUserById_Test(userRepo){
 /* RESERVATION ENDPOINTS */
 
 /* /reservations - GET*/
-function getReservations_Test(resRepo){
-    server.get("/reservations", (req, res) => {
-        let res_ = resRepo.getReservations();
+async function getReservations_Test(resRepo){
+    server.get("/reservations", async (req, res) => {
+        let res_ = await resRepo.getReservations();
 
         return res.json(res_);
     });
@@ -253,11 +301,11 @@ function getReservations_Test(resRepo){
 
 /* creation of new reservation by userid - POST */
 
-function createReservation_Test(userRepo, cartRepo, resRepo){
-    server.post("/reservations", (req, res) => {
+async function createReservation_Test(userRepo, cartRepo, resRepo){
+    server.post("/reservations", async (req, res) => {
         const { userId} = req.body;
 
-        const user = userRepo.getUserById(userId);
+        const user = await userRepo.getUserById(userId);
         if (!user) {
             return res.status(400).json({ error: "User not found" });
         }
@@ -274,7 +322,7 @@ function createReservation_Test(userRepo, cartRepo, resRepo){
         }
         */
 
-        const userCart = cartRepo.getCart(userId);  //Retrieve user's cart 
+        const userCart = await cartRepo.getCart(userId);  //Retrieve user's cart 
         //User's cart contains all the bags
         //iterate over all the bags and:
         //1. do all the checks
@@ -334,8 +382,8 @@ function createReservation_Test(userRepo, cartRepo, resRepo){
 
 
 /* delete a reservation done by userid   - GET*/
-function deleteReservation_Test(resRepo){
-    server.delete("/reservations/:id", (req, res) => {
+async function deleteReservation_Test(resRepo){
+    server.delete("/reservations/:id", async (req, res) => {
         /*
         const reservationId = parseInt(req.params.id);
         const index = reservations.findIndex(r => r.id === reservationId);
@@ -350,7 +398,7 @@ function deleteReservation_Test(resRepo){
         res.json({ message: `Reservation ${reservationId} succesfully deleted!` });
         */
 
-        const res_ = resRepo.cancelReservation(req.params.id);
+        const res_ = await resRepo.cancelReservation(req.params.id);
         if (res_.startsWith("Error")){
             return res.status(404).json({ error: "Reservation not found!" });
         } else {
@@ -367,6 +415,7 @@ function deleteReservation_Test(resRepo){
 createUser_Test(UserRepo_Testing);
 updateUser_Test(UserRepo_Testing);
 getUserById_Test(UserRepo_Testing);
+deleteUser_Test(UserRepo_Testing);
 
 
 //For Reservation
