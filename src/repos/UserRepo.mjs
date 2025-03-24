@@ -6,17 +6,17 @@ export class UserRepo {
      * @param {string} familyName
      * @returns {User}
      */
-    createUser(email, assignedName, familyName) { }
+    async createUser(email, assignedName, familyName) { }
     /**
      * @param {number} id
      * @param {string} email
      * @param {string} assignedName
      * @param {string} familyName
      */
-    updateUser(id, email, assignedName, familyName) { }
+    async updateUser(id, email, assignedName, familyName) { }
     /**
      * @param {number} id
      * @returns {User}
      */
-    getUserById(id) { }
+    async getUserById(id) { }
 }
