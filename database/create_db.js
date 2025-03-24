@@ -64,7 +64,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         price REAL,
         pickupTimeStart DATE,
         pickUpTimeEnd DATE,
-        reservedBy INTEGER,
+        reservedBy INTEGER NULL,
         reservationId INTEGER NULL,
         FOREIGN KEY (estId) REFERENCES ESTABLISHMENT(EstId),
         FOREIGN KEY (reservedBy) REFERENCES USER(UserId),
@@ -73,8 +73,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // Create BAG_ITEM table
       db.run(`CREATE TABLE IF NOT EXISTS BAG_ITEM (
-        bagId INTEGER,
         itemId INTEGER,
+        bagId INTEGER,
         name VARCHAR(20),
         quantity REAL,
         measurementUnit VARCHAR(5),

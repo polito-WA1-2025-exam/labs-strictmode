@@ -5,10 +5,11 @@ export class BagItem {
      * @param {string} name
      * @param {number} quantity - Must always be greater than 0.
      * @param {string} measurementUnit - Unit of measurement for the quantity (e.g., "kg", "g", "units").
+     * @param {boolean} removed
      */
-    constructor(bagId, id, name, quantity, measurementUnit, removed=false) {
-        this.bagId = bagId;
+    constructor(id, bagId, name, quantity, measurementUnit, removed=false) {
         this.id = id;
+        this.bagId = bagId;
         this.name = name;
         this.quantity = quantity;
         this.measurementUnit = measurementUnit;

@@ -16,8 +16,10 @@ export class Bag {
      * @param {number} price - The price of the bag.
      * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
      * @param {string} pickupTimeEnd - The end time for pickup in ISO 8601 format.
+     * @param {string} reservedBy - Id user that reserved the bag
+     * @param {string} reservationId - Id of respective reservation
      */
-    constructor(id, bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, reservedBy = null) {
+    constructor(id, bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, reservedBy = null, reservationId = null) {
         this.id = id;
         this.bagType = bagType;
         this.estId = estId;
@@ -27,8 +29,8 @@ export class Bag {
         this.items = [];
         this.pickupTimeStart = dayjs(pickupTimeStart);
         this.pickupTimeEnd = dayjs(pickupTimeEnd);
-
         this.reservedBy = reservedBy;
+        this.reservationId = reservationId;
     }
 
 

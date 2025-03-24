@@ -1,1 +1,1 @@
-export {connect, disconnect} from './connect.js';
+export {pathDbFromRepos, connect, disconnect} from './connect.js';

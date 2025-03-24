@@ -1,5 +1,7 @@
 import sqlite3 from 'sqlite3';
 
+const pathDbFromRepos = '../../database/reservation_system.db';
+
 function connect(pathDB = '../database/reservation_system.db') {
     const sql3 = sqlite3.verbose();
     
@@ -24,4 +26,4 @@ function disconnect(DB) {
     });
 }
 
-export {connect, disconnect};
+export {pathDbFromRepos, connect, disconnect};
