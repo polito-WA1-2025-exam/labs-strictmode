@@ -1,6 +1,14 @@
 import Reservation from "../models/Reservation.mjs";
+import sqlite3 from 'sqlite3';
+import {pathDbFromRepos, connect} from '../../database/index.js';
 
 export class ReservationRepo {
+
+    constructor() {
+        this.pathDB = pathDbFromRepos;
+        this.DB = connect(this.pathDB);
+    }
+
     /**
      * Creates a new reservation for each cart item.
      * If any of the cart items cannot be reserved, no reservations should be created.
