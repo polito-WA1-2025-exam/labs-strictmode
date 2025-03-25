@@ -1,7 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Create a new database or open existing one
+// Create a new database or open an existing one
 const dbPath = path.join(__dirname, 'reservation_system.db');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
@@ -32,6 +32,32 @@ const db = new sqlite3.Database(dbPath, (err) => {
         familyName VARCHAR(20)
       )`, handleError);
 
+      // Create BAG table
+      db.run(`CREATE TABLE IF NOT EXISTS BAG (
+        bagId INTEGER PRIMARY KEY AUTOINCREMENT,
+        estId INTEGER,
+        size VARCHAR(20),
+        bagType VARCHAR(20),
+        tags VARCHAR(200),
+        price REAL,
+        pickupTimeStart DATE,
+        pickUpTimeEnd DATE,
+        available BOOLEAN,
+        FOREIGN KEY (estId) REFERENCES ESTABLISHMENT(estId)
+      )`, handleError);
+
+      // Create BAG_ITEM table
+      db.run(`CREATE TABLE IF NOT EXISTS BAG_ITEM (
+        bagItemId INTEGER,
+        bagId INTEGER,
+        name VARCHAR(20),
+        quantity REAL,
+        measurementUnit VARCHAR(5),
+        included BOOLEAN,
+        PRIMARY KEY (bagId, bagItemId),
+        FOREIGN KEY (bagId) REFERENCES BAG(bagId)
+      )`, handleError);
+
       // Create ESTABLISHMENT table
       db.run(`CREATE TABLE IF NOT EXISTS ESTABLISHMENT (
         estId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,44 +70,35 @@ const db = new sqlite3.Database(dbPath, (err) => {
         estType VARCHAR(20)
       )`, handleError);
 
-      // Create RESERVATION table (without the BAG reference initially)
+      // Create PURCHASE table (fixed syntax)
+      db.run(`CREATE TABLE IF NOT EXISTS PURCHASE (
+        purchaseId INTEGER PRIMARY KEY AUTOINCREMENT,
+        reservationId INTEGER,
+        bagId INTEGER,
+        FOREIGN KEY (reservationId) REFERENCES RESERVATION(reservationId),
+        FOREIGN KEY (bagId) REFERENCES BAG(bagId)
+      )`, handleError); 
+
+      // Create RESERVATION table (fixed syntax)
       db.run(`CREATE TABLE IF NOT EXISTS RESERVATION (
         reservationId INTEGER PRIMARY KEY AUTOINCREMENT,
         userId INTEGER,
         createdAt DATE,
         canceledAt DATE NULL,
         totPrice REAL,
-        FOREIGN KEY (userId) REFERENCES USER(UserId)
-      )`, handleError);
+        FOREIGN KEY (userId) REFERENCES USER(userId)
+      )`, handleError); 
 
-      // Create BAG table
-      db.run(`CREATE TABLE IF NOT EXISTS BAG (
-        bagId INTEGER PRIMARY KEY AUTOINCREMENT,
-        bagType VARCHAR(12),
-        estId INTEGER,
-        size VARCHAR(20),
-        tags VARCHAR(200),
-        price REAL,
-        pickupTimeStart DATE,
-        pickUpTimeEnd DATE,
-        reservedBy INTEGER NULL,
-        reservationId INTEGER NULL,
-        FOREIGN KEY (estId) REFERENCES ESTABLISHMENT(EstId),
-        FOREIGN KEY (reservedBy) REFERENCES USER(UserId),
-        FOREIGN KEY (reservationId) REFERENCES RESERVATION(reservationId)
-      )`, handleError);
-
-      // Create BAG_ITEM table
-      db.run(`CREATE TABLE IF NOT EXISTS BAG_ITEM (
-        itemId INTEGER,
+      // Create TEMP_CART table (fixed syntax)
+      db.run(`CREATE TABLE IF NOT EXISTS TEMP_CART (
+        bagItemId INTEGER,
         bagId INTEGER,
-        name VARCHAR(20),
-        quantity REAL,
-        measurementUnit VARCHAR(5),
-        removed BOOLEAN,
-        PRIMARY KEY (bagId, itemId),
-        FOREIGN KEY (bagId) REFERENCES BAG(bagId)
-      )`, handleError);
+        userId INTEGER,
+        PRIMARY KEY (bagItemId, bagId, userId),
+        FOREIGN KEY (bagItemId) REFERENCES BAG_ITEM(bagItemId),
+        FOREIGN KEY (bagId) REFERENCES BAG(bagId),
+        FOREIGN KEY (userId) REFERENCES USER(userId)
+      )`, handleError); 
 
       // Create index to improve performance
       db.run(`CREATE INDEX IF NOT EXISTS idx_bag_item_bagid ON BAG_ITEM(bagId)`, handleError);

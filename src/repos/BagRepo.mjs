@@ -1,7 +1,6 @@
 import Bag from "../models/Bag.mjs";
 import sqlite3 from 'sqlite3';
 import {pathDbFromRepos, connect} from '../../database/index.js';
-import { Bag } from '../models/index.mjs'
 
 export class BagRepo {
 
