@@ -136,3 +136,41 @@ GET http://localhost:3001/establishments/1
 #Get Estsblishment bags [GET Method]
 #http://localhost:3001/establishments/{ESTID}/bags
 GET http://localhost:3001/establishments/1/bags
+
+
+###
+
+#Delete an establishment by estId [DELETE Method]
+DELETE http://localhost:3001/establishments/1
+
+
+###
+
+#Create a new bag [POST Method]
+#Bag syntax: bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, reservedBy = null
+
+POST http://localhost:3001/bags
+Content-Type: application/json
+
+{
+  "bagType": "regular",
+  "estId": 1,
+  "size": "M",
+  "tags": ["Pelle", "Nera"],
+  "price": 10,
+  "pickupTimeStart": "2021-12-01T10:00:00.000Z",
+  "pickupTimeEnd": "2026-12-01T12:00:00.000Z",
+  "reservedBy": null
+}
+
+
+###
+
+#Get a bag by bagId [GET Method]
+GET http://localhost:3001/bags/1
+
+
+###
+
+#List available bags [GET Method]
+GET http://localhost:3001/bags
