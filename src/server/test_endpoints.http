@@ -96,3 +96,19 @@ Content-Type: application/json
 {
   "bagId": 10
 }
+
+
+###
+
+#Remove cartItem from cart by userid and bagid   [DELETE Method]
+#server.delete("/carts/:userId/bags/:bagId"...)
+#use samples bags id: 10, 20, 30, 40, 50 for debugging
+#http://localhost:3001/carts/{USERID}/bags/{BAGID}
+
+DELETE http://localhost:3001/carts/1/bags/10
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "bagId": 10
+}

@@ -169,8 +169,14 @@ const CartRepo_Testing = {
     async getCart(userId) {
         //check if the user has a cart
         if (!this.carts[userId]) {
-            return `Error: User ${userId} has no cart!`;
+            return `Error: User ${userId} has an empty cart!`;
         } else {
+
+            //if the user has a cart but has deleted all the bags from it, return error
+            if (this.carts[userId].items.length === 0){
+                return `Error: User ${userId} has an empty cart!`;
+            }
+            
             return this.carts[userId];
         }
     },
@@ -188,18 +194,20 @@ const CartRepo_Testing = {
             //cartItem -> bag -> retrieve bagId
             if (this.carts[userId].items.find(item => item.bag.id === bagId)) {
                 return `Error: Bag ${bagId} already in the cart!`;
-            } else {
-                //add the bag, so the cartItem, to the cart
-                const bag = availableBags.find(b => b.id === bagId);
-                if (!bag) {
-                    return `Error: Bag ${bagId} not found!`;
-                }
-                //add the corresponding cartItem, which can be further customized by the end user, to the cart
-                //Reminder: a cartItem is essentially a bag with a list of removed items, that can be choosen by the end user
-                this.carts[userId].addItem(new CartItem(bag));
-                return `Bag ${bagId} succesfully added to the cart!`;
-            }
+            } 
         }
+
+
+        //add the bag, so the cartItem, to the cart
+        const bag = availableBags.find(b => b.id === bagId);
+        if (!bag) {
+            return `Error: Bag ${bagId} not found!`;
+        }
+        //add the corresponding cartItem, which can be further customized by the end user, to the cart
+        //Reminder: a cartItem is essentially a bag with a list of removed items, that can be choosen by the end user
+        this.carts[userId].addItem(new CartItem(bag));
+        return `Bag ${bagId} succesfully added to the cart!`;
+        
     },
 
     //remove bag, so a cartItem, from the user's cart
