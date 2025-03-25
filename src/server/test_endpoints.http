@@ -75,3 +75,24 @@ Content-Type: application/json
 
 #Get user by id [GET Method]
 GET http://localhost:3001/users/1
+
+
+###
+
+#Get user's cart by userid  [GET Method]
+#server.get("/carts/:userId"...)
+GET http://localhost:3001/carts/1
+
+
+###
+
+#add cart item to the cart [POST Method]
+#server.post("/carts/:userId/bags"...)
+#use samples bags id: 10, 20, 30, 40, 50 for debugging
+#http://localhost:3001/carts/{USERID}/bags
+POST http://localhost:3001/carts/1/bags
+Content-Type: application/json
+
+{
+  "bagId": 10
+}
