@@ -112,3 +112,27 @@ Content-Type: application/json
   "userId": 1,
   "bagId": 10
 }
+
+
+###
+
+#Create a new Establishment by name, estType [POST Method]
+POST http://localhost:3001/establishments
+Content-Type: application/json
+
+{
+  "name": "Prova",
+  "estType": "Ristorante"
+}
+
+###
+
+#Get establishment by estId [GET Method]
+GET http://localhost:3001/establishments/1
+
+
+###
+
+#Get Estsblishment bags [GET Method]
+#http://localhost:3001/establishments/{ESTID}/bags
+GET http://localhost:3001/establishments/1/bags

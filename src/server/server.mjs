@@ -7,7 +7,7 @@ import {Bag, User, Establishment, Reservation, Cart, BagItem, CartItem} from "..
 
 
 /* import repos */
-import {CartRepo, ReservationRepo, UserRepo} from "../repos/index.mjs";
+import {CartRepo, ReservationRepo, UserRepo, EstablishmentRepo} from "../repos/index.mjs";
 import e from "express";
 
 
@@ -285,6 +285,62 @@ const ReservationRepo_Testing = {
 
 
 
+const EstablishmentRepo_Testing = {
+
+
+    estId: 1,
+    estBags: {},
+    est: {},
+
+    //create a new establishment
+    async createEstablishment(name, estType) {
+
+        const newEst = new Establishment(this.estId++, name, [], estType);
+        this.estBags[newEst.id] = [];
+        this.est[newEst.id] = newEst;
+        return newEst;
+    },
+
+
+
+    //get establishment bags by id
+    async getEstablishmentBags(estId) {
+        //if the establishment exists, return it
+        //otherwise, return error
+        const response = this.estBags[estId];
+        if (response) {
+            return response;
+        }
+
+        return `Error: Establishment ${estId} not found!`;
+    },
+
+
+    //get establishment by id
+    async getEstablishment(estId) {
+        //if the establishment exists, return it
+        //otherwise, return error
+        const response = this.est[estId];
+        if (response) {
+            return response;
+        }
+
+        return `Error: Establishment ${estId} not found!`;
+    },
+
+
+
+
+    //list all the saved establishments
+    async listAllEstablishments(){
+        return this.estBags;
+    }
+
+
+}
+
+
+
 
 
 
@@ -532,6 +588,42 @@ async function deleteReservation_Test(resRepo){
 
 
 
+/* ESTABLISHMENT ENDPOINTS */
+
+async function createEstablishment_Test(estRepo){
+    server.post("/establishments", async (req, res) => {
+        //create a new establishment by name, estType
+        const { name, estType } = req.body;
+        const res_ = await estRepo.createEstablishment(name, estType);
+        return res.json(res_);
+    });
+}
+
+
+async function getEstablishment(estRepo) {
+    server.get("/establishments/:estId", async (req, res) => {
+        //get estId and convert it to number
+        const estId = parseInt(req.params.estId);
+
+        const res_ = await estRepo.getEstablishment(estId);
+        return res.json(res_);
+    });
+}
+
+
+async function getEstablishmentBags(estRepo) {
+    server.get("/establishments/:estId/bags", async (req, res) => {
+        //get estId and convert it to number
+        const estId = parseInt(req.params.estId);
+
+        const res_ = await estRepo.getEstablishmentBags(estId);
+        return res.json(res_);
+    });
+
+}
+
+
+
 //REGISTER TESTING ENDPOINTS
 
 //For User
@@ -550,6 +642,12 @@ removeBag_Test(CartRepo_Testing);
 createReservation_Test(UserRepo_Testing, CartRepo_Testing, ReservationRepo_Testing);
 deleteReservation_Test(ReservationRepo_Testing);
 getReservations_Test(ReservationRepo_Testing);
+
+
+//For Establishment
+createEstablishment_Test(EstablishmentRepo_Testing);
+getEstablishment(EstablishmentRepo_Testing);
+getEstablishmentBags(EstablishmentRepo_Testing);    
 
 
 //start the app AFTER all the middlewares registrations
