@@ -1,0 +1,176 @@
+# home of the server [GET Method]
+GET http://localhost:3001/
+
+
+###
+
+#Test0: /reservations [POST]
+POST http://localhost:3001/reservations
+Content-Type: application/json
+
+{
+  "userId": 1
+}
+
+
+### 
+#Get all the reservations [GET Method]
+GET http://localhost:3001/reservations
+Content-Type: application/json
+
+
+###
+
+#Make a new reservation [POST Method]
+POST http://localhost:3001/reservations
+Content-Type: application/json
+
+{
+  "userId": 1
+}
+
+
+###
+
+#Delete a reservation made by the user [GET Method]
+
+DELETE http://localhost:3001/reservations/1
+Content-Type: application/json
+
+
+###
+
+#Create a new user [POST Method]
+POST http://localhost:3001/users
+Content-Type: application/json
+
+{
+  "email": "prova@test.com",
+  "assignedName": "Juve Merda",
+  "familyName": "Granata"
+
+}
+
+
+###
+
+
+#Delete a user [DELETE Method]
+DELETE http://localhost:3001/users/1
+
+
+###
+
+#Update a user [PUT Method]
+PUT http://localhost:3001/users/1
+Content-Type: application/json
+
+{
+  "email": "update@update.it",
+  "assignedName": "Prova Update",
+  "familyName": "Granata"
+}
+
+###
+
+#Get user by id [GET Method]
+GET http://localhost:3001/users/1
+
+
+###
+
+#Get user's cart by userid  [GET Method]
+#server.get("/carts/:userId"...)
+GET http://localhost:3001/carts/1
+
+
+###
+
+#add cart item to the cart [POST Method]
+#server.post("/carts/:userId/bags"...)
+#use samples bags id: 10, 20, 30, 40, 50 for debugging
+#http://localhost:3001/carts/{USERID}/bags
+POST http://localhost:3001/carts/1/bags
+Content-Type: application/json
+
+{
+  "bagId": 5
+}
+
+
+###
+
+#Remove cartItem from cart by userid and bagid   [DELETE Method]
+#server.delete("/carts/:userId/bags/:bagId"...)
+#use samples bags id: 10, 20, 30, 40, 50 for debugging
+#http://localhost:3001/carts/{USERID}/bags/{BAGID}
+
+DELETE http://localhost:3001/carts/1/bags/5
+
+
+###
+
+#Create a new Establishment by name, estType [POST Method]
+POST http://localhost:3001/establishments
+Content-Type: application/json
+
+{
+  "name": "Prova",
+  "estType": "Ristorante"
+}
+
+###
+
+#Get establishment by estId [GET Method]
+GET http://localhost:3001/establishments/1
+
+
+###
+
+#Get Estsblishment bags [GET Method]
+#http://localhost:3001/establishments/{ESTID}/bags
+GET http://localhost:3001/establishments/1/bags
+
+
+###
+
+#Delete an establishment by estId [DELETE Method]
+DELETE http://localhost:3001/establishments/1
+
+
+###
+
+#Create a new bag [POST Method]
+#Bag syntax: bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, reservedBy = null
+
+POST http://localhost:3001/bags
+Content-Type: application/json
+
+{
+  "bagType": "regular",
+  "estId": 1,
+  "size": "M",
+  "tags": ["Pelle", "Nera"],
+  "price": 10,
+  "pickupTimeStart": "2021-12-01T10:00:00.000Z",
+  "pickupTimeEnd": "2026-12-01T12:00:00.000Z",
+  "reservedBy": null
+}
+
+
+###
+
+#Get a bag by bagId [GET Method]
+GET http://localhost:3001/bags/1
+
+###
+
+
+#Get all bags by estId [GET Method]
+#http://localhost:3001/bags?estId={ESTID}
+GET http://localhost:3001/bags?estId=1
+
+###
+
+#List available bags [GET Method]
+GET http://localhost:3001/bags
