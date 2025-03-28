@@ -29,7 +29,7 @@ export class Cart {
         return cartItem;
     }
 
-    returnCartItems() {
+    getCartItems() {
         return this.items;
     }
 }

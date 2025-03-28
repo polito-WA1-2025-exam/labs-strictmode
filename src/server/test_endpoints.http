@@ -94,7 +94,7 @@ POST http://localhost:3001/carts/1/bags
 Content-Type: application/json
 
 {
-  "bagId": 10
+  "bagId": 5
 }
 
 
@@ -105,13 +105,7 @@ Content-Type: application/json
 #use samples bags id: 10, 20, 30, 40, 50 for debugging
 #http://localhost:3001/carts/{USERID}/bags/{BAGID}
 
-DELETE http://localhost:3001/carts/1/bags/10
-Content-Type: application/json
-
-{
-  "userId": 1,
-  "bagId": 10
-}
+DELETE http://localhost:3001/carts/1/bags/5
 
 
 ###

@@ -38,7 +38,7 @@ const availableBags = [
 
 /* BAG REPO - TESTING */
 
-const BagRepo_Testing = {
+const BagRepoTesting = {
 
 
     /** 
@@ -67,11 +67,12 @@ const BagRepo_Testing = {
      */
     async getBag(bagId) { 
         //return the bag with the given id, if it exists
+        //otherwise, return null
         if (bagId <= availableBags.length){
             return availableBags.find(b => b.id === bagId);
         }
 
-        return `Error: Bag ${bagId} not found!`;
+        return null;
     },
 
     /**
@@ -117,7 +118,7 @@ const BagRepo_Testing = {
 
 
 
-const UserRepo_Testing = {
+const UserRepoTesting = {
 
     users: [],
     uid: 1,
@@ -129,11 +130,15 @@ const UserRepo_Testing = {
     },
 
     async getUserById(id) {
-        if (id === 1){
-            return this.users[0];
-        } else {
-            return null;
+        //return the user with the given id, if it exists
+        //if not, return null
+        for (let i=0; i<this.users.length; i++){
+            if (this.users[i].id === id){
+                return this.users[i];
+            }
         }
+
+        return null;
     },
 
     //function to create a new user
@@ -206,7 +211,7 @@ const UserRepo_Testing = {
 }
 
 
-const CartRepo_Testing = {
+const CartRepoTesting = {
 
     //add bag id
     currentBagId: 1,
@@ -251,12 +256,12 @@ const CartRepo_Testing = {
     async getCart(userId) {
         //check if the user has a cart
         if (!this.carts[userId]) {
-            return `Error: User ${userId} has an empty cart!`;
+            return null;
         } else {
 
-            //if the user has a cart but has deleted all the bags from it, return error
+            //if the user has a cart but has deleted all the bags from it, return null
             if (this.carts[userId].items.length === 0){
-                return `Error: User ${userId} has an empty cart!`;
+                return null;
             }
             
             return this.carts[userId];
@@ -317,7 +322,7 @@ const CartRepo_Testing = {
 }
 
 
-const ReservationRepo_Testing = {
+const ReservationRepoTesting = {
 
         resId: 1,
         reservations: [],
@@ -367,7 +372,7 @@ const ReservationRepo_Testing = {
 
 
 
-const EstablishmentRepo_Testing = {
+const EstablishmentRepoTesting = {
 
 
     estId: 1,
@@ -394,7 +399,7 @@ const EstablishmentRepo_Testing = {
             return response;
         }
 
-        return `Error: Establishment ${estId} not found!`;
+        return null;
     },
 
 
@@ -407,7 +412,7 @@ const EstablishmentRepo_Testing = {
             return response;
         }
 
-        return `Error: Establishment ${estId} not found!`;
+        return null;
     },
 
 
@@ -481,7 +486,7 @@ server.get('/', (req, res) => {
 /* USER ENDPOINTS */
 
 //user post endpoint: create a new user
-async function createUser_Test(userRepo){
+async function createUser(userRepo){
      server.post("/users", async (req, res) => {
         const { email, assignedName, familyName } = req.body;
         
@@ -491,7 +496,7 @@ async function createUser_Test(userRepo){
 }
 
 //user put endpoint: update a user
-function updateUser_Test(userRepo){
+function updateUser(userRepo){
     server.put("/users/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);
@@ -502,7 +507,7 @@ function updateUser_Test(userRepo){
 }
 
 //user get endpoint: get a user by id
-async function getUserById_Test(userRepo){
+async function getUserById(userRepo){
     server.get("/users/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);
@@ -515,7 +520,7 @@ async function getUserById_Test(userRepo){
 }
 
 //user delete endpoint: delete a user by id
-async function deleteUser_Test(userRepo){
+async function deleteUser(userRepo){
     server.delete("/users/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);
@@ -528,7 +533,7 @@ async function deleteUser_Test(userRepo){
 /* BAG ENDPOINTS */
 
 //create a new bag
-async function  createBag_Test(bagRepo){
+async function  createBag(bagRepo){
     //the function wants: async createBag(bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd)
     server.post("/bags", async (req, res) => {
         const { bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd } = req.body;
@@ -540,16 +545,19 @@ async function  createBag_Test(bagRepo){
 
 
 //get bag by bagId
-async function getBag_Test(bagRepo){
+async function getBag(bagRepo){
     //async getBag(bagId)
     server.get("/bags/:bagId", async (req, res) => {
         const res_ = await bagRepo.getBag(parseInt(req.params.bagId));
+        if (!res_){
+            return res.status(404).json({ error: "Bag not found!" });
+        }
         return res.json(res_);
     });
 }
 
 //list all the available bags
-async function listAvailableBags_Test(bagRepo){
+async function listAvailableBags(bagRepo){
     server.get("/bags", async (req, res) => {
         const res_ = await bagRepo.listAvailable();
         return res.json(res_);
@@ -567,16 +575,19 @@ async function listAvailableBags_Test(bagRepo){
 /* CART ENDPOINTS */
 
 //get cart by userid
-async function getCart_Test(cartRepo){
+async function getCart(cartRepo){
     server.get("/carts/:userId", async (req, res) => {
         const userId = parseInt(req.params.userId);
         const cart = await cartRepo.getCart(userId);
+        if (!cart) {
+            return res.status(404).json({ error: `Cart for user ${userId} not found!` });
+        }
         return res.json(cart);
     });
 }
 
 //add bag, so a cartItem, to cart by userid
-async function addBag_Test(cartRepo){
+async function addBag(cartRepo){
     server.post("/carts/:userId/bags", async (req, res) => {
         const userId = parseInt(req.params.userId);
         const { bagId } = req.body;
@@ -586,7 +597,7 @@ async function addBag_Test(cartRepo){
 }
 
 //remove bag, so a cartItem, from cart by userid
-async function removeBag_Test(cartRepo){
+async function removeBag(cartRepo){
     server.delete("/carts/:userId/bags/:bagId", async (req, res) => {
         const userId = parseInt(req.params.userId);
         const bagId = parseInt(req.params.bagId);
@@ -599,17 +610,19 @@ async function removeBag_Test(cartRepo){
 /* RESERVATION ENDPOINTS */
 
 /* /reservations - GET*/
-async function getReservations_Test(resRepo){
+async function getReservations(resRepo){
     server.get("/reservations", async (req, res) => {
         let res_ = await resRepo.getReservations();
-
+        if (!res_){
+            return res.status(404).json({ error: "Reservations not found!" });
+        }
         return res.json(res_);
     });
 }
 
 /* creation of new reservation by userid - POST */
 
-async function createReservation_Test(userRepo, cartRepo, resRepo){
+async function createReservation(userRepo, cartRepo, resRepo){
     server.post("/reservations", async (req, res) => {
         const { userId} = req.body;
 
@@ -618,26 +631,14 @@ async function createReservation_Test(userRepo, cartRepo, resRepo){
             return res.status(400).json({ error: "User not found" });
         }
 
-
-        /*
-        const cartItems = [];
-        for (const bagId of bagIds) {
-            const bag = bags.find(b => b.id === bagId);
-            if (!bag) {
-                return res.status(400).json({ error: `Bag (having ID ${bagId}) not found` });
-            }
-            cartItems.push(new CartItem(bag));
-        }
-        */
-
         //for working with a sample pre set cart, use:
         //const userCart = await cartRepo.getCart_Sample(userId);  //Retrieve user's cart
         //otherwise, use:
         const userCart = await cartRepo.getCart(userId);  //Retrieve user's cart 
 
         //check if the user has a cart, if not there's no sense in doing a reservation
-        if (userCart.startsWith("Error")){
-            return res.status(400).json("Error: User has no cart!");
+        if (!userCart) {
+            return res.status(400).json({ error: "User has no cart!" });
         }
 
 
@@ -648,7 +649,7 @@ async function createReservation_Test(userRepo, cartRepo, resRepo){
 
         const successfulReservations = [];
 
-        for (const cartItem of userCart.returnCartItems()){
+        for (const cartItem of userCart.getCartItems()){
             //1. for each bag do all the checks
 
             //a. Check Expiration date
@@ -700,22 +701,8 @@ async function createReservation_Test(userRepo, cartRepo, resRepo){
 
 
 /* delete a reservation done by userid   - GET*/
-async function deleteReservation_Test(resRepo){
+async function deleteReservation(resRepo){
     server.delete("/reservations/:id", async (req, res) => {
-        /*
-        const reservationId = parseInt(req.params.id);
-        const index = reservations.findIndex(r => r.id === reservationId);
-
-        if (index === -1) {
-            return res.status(404).json({ error: "Reservation not found!" });
-        }
-
-        reservations[index].cancel();
-        reservations.splice(index, 1);
-        
-        res.json({ message: `Reservation ${reservationId} succesfully deleted!` });
-        */
-
         const res_ = await resRepo.cancelReservation(req.params.id);
         if (res_.startsWith("Error")){
             return res.status(404).json({ error: "Reservation not found!" });
@@ -729,7 +716,7 @@ async function deleteReservation_Test(resRepo){
 
 /* ESTABLISHMENT ENDPOINTS */
 
-async function createEstablishment_Test(estRepo){
+async function createEstablishment(estRepo){
     server.post("/establishments", async (req, res) => {
         //create a new establishment by name, estType
         const { name, estType } = req.body;
@@ -739,30 +726,36 @@ async function createEstablishment_Test(estRepo){
 }
 
 
-async function getEstablishment_Test(estRepo) {
+async function getEstablishment(estRepo) {
     server.get("/establishments/:estId", async (req, res) => {
         //get estId and convert it to number
         const estId = parseInt(req.params.estId);
 
         const res_ = await estRepo.getEstablishment(estId);
+        if (!res_){
+            return res.status(400).json({ error: "Establishment not found!" });
+        }
         return res.json(res_);
     });
 }
 
 
-async function getEstablishmentBags_Test(estRepo) {
+async function getEstablishmentBags(estRepo) {
     server.get("/establishments/:estId/bags", async (req, res) => {
         //get estId and convert it to number
         const estId = parseInt(req.params.estId);
 
         const res_ = await estRepo.getEstablishmentBags(estId);
+        if (!res_){
+            return res.status(400).json({ error: "Establishment not found or it doen't have bags" });
+        }
         return res.json(res_);
     });
 
 }
 
 
-async function deleteEstablishment_Test(estRepo) {
+async function deleteEstablishment(estRepo) {
     server.delete("/establishments/:estId", async (req, res) => {
         //get estId and convert it to number
         const estId = parseInt(req.params.estId);
@@ -778,33 +771,33 @@ async function deleteEstablishment_Test(estRepo) {
 //REGISTER TESTING ENDPOINTS
 
 //For User
-createUser_Test(UserRepo_Testing);
-updateUser_Test(UserRepo_Testing);
-getUserById_Test(UserRepo_Testing);
-deleteUser_Test(UserRepo_Testing);
+createUser(UserRepoTesting);
+updateUser(UserRepoTesting);
+getUserById(UserRepoTesting);
+deleteUser(UserRepoTesting);
 
 //For Bag
-createBag_Test(BagRepo_Testing);
-getBag_Test(BagRepo_Testing);
-listAvailableBags_Test(BagRepo_Testing);
+createBag(BagRepoTesting);
+getBag(BagRepoTesting);
+listAvailableBags(BagRepoTesting);
 
 //For Cart
-getCart_Test(CartRepo_Testing);
-addBag_Test(CartRepo_Testing);
-removeBag_Test(CartRepo_Testing);
+getCart(CartRepoTesting);
+addBag(CartRepoTesting);
+removeBag(CartRepoTesting);
 
 
 //For Reservation
-createReservation_Test(UserRepo_Testing, CartRepo_Testing, ReservationRepo_Testing);
-deleteReservation_Test(ReservationRepo_Testing);
-getReservations_Test(ReservationRepo_Testing);
+createReservation(UserRepoTesting, CartRepoTesting, ReservationRepoTesting);
+deleteReservation(ReservationRepoTesting);
+getReservations(ReservationRepoTesting);
 
 
 //For Establishment
-createEstablishment_Test(EstablishmentRepo_Testing);
-getEstablishment_Test(EstablishmentRepo_Testing);
-getEstablishmentBags_Test(EstablishmentRepo_Testing);    
-deleteEstablishment_Test(EstablishmentRepo_Testing);
+createEstablishment(EstablishmentRepoTesting);
+getEstablishment(EstablishmentRepoTesting);
+getEstablishmentBags(EstablishmentRepoTesting);    
+deleteEstablishment(EstablishmentRepoTesting);
 
 
 //start the app AFTER all the middlewares registrations
