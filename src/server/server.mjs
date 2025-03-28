@@ -84,7 +84,7 @@ const BagRepoTesting = {
         //get all the bags of the establishment by estId
 
         let response = [];
-        for (let i = 0; i < availableBags.length; i++){7
+        for (let i = 0; i < availableBags.length; i++){
             if (availableBags[i].estId === estId){
                 response.push(availableBags[i]);
             }
