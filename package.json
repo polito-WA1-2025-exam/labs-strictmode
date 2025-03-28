@@ -2,5 +2,10 @@
   "dependencies": {
     "dayjs": "^1.11.13",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "eslint": "^9.23.0",
+    "globals": "^16.0.0"
   }
 }
