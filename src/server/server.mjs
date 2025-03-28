@@ -1,4 +1,4 @@
-import express, { json } from "express";
+import express, { json, response } from "express";
 import morgan from 'morgan';
 import dayjs from "dayjs";
 
@@ -75,6 +75,29 @@ const BagRepoTesting = {
         return null;
     },
 
+    /** 
+    * Get all the bags of an establishment by estId
+    * @param {number} estId
+    * @returns {Array<Bag>} - The bags of the establishment - or null if no bags are found
+    */
+    async getBagsByEstId(estId) {
+        //get all the bags of the establishment by estId
+
+        let response = [];
+        for (let i = 0; i < availableBags.length; i++){7
+            if (availableBags[i].estId === estId){
+                response.push(availableBags[i]);
+            }
+        }
+
+        if (response.length === 0){
+            return null;
+        }
+
+        return response;
+    },
+
+
     /**
      * Lists all the available bags, from every establishment.
      * A bag is available if no one reserved it yet and it can be picked up now.
@@ -101,7 +124,8 @@ const BagRepoTesting = {
         }
 
         if (res_.length === 0){
-            return "Error: No available bags right now!";
+            //return null
+            return null;
         }
 
         return res_;
@@ -171,7 +195,7 @@ const UserRepoTesting = {
             }
         }
 
-        return "Error: User not found!";
+        return null;
     },
 
     //delete user by userid
@@ -184,7 +208,8 @@ const UserRepoTesting = {
             }
         }
 
-        return "Error: User not found!";
+        //throw an error if the user is not found
+        throw new Error(`Error: user with id ${id} not found!`);
     },
 
 
@@ -206,7 +231,7 @@ const UserRepoTesting = {
             }
         }
 
-        return "Error: User not found!";
+        return null;
     }
 }
 
@@ -280,7 +305,8 @@ const CartRepoTesting = {
             //check if the bag is already in the cart
             //cartItem -> bag -> retrieve bagId
             if (this.carts[userId].items.find(item => item.bag.id === bagId)) {
-                return `Error: Bag ${bagId} already in the cart!`;
+                //throw an error if the bag is already in the cart
+                throw new Error(`Bag ${bagId} already in the cart!`);
             } 
         }
 
@@ -288,7 +314,7 @@ const CartRepoTesting = {
         //add the bag, so the cartItem, to the cart
         const bag = availableBags.find(b => b.id === bagId);
         if (!bag) {
-            return `Error: Bag ${bagId} not found!`;
+            return null;
         }
         //add the corresponding cartItem, which can be further customized by the end user, to the cart
         //Reminder: a cartItem is essentially a bag with a list of removed items, that can be choosen by the end user
@@ -301,13 +327,13 @@ const CartRepoTesting = {
     async removeBag(userId, bagId) {
         //check if the user has a cart
         if (!this.carts[userId]) {
-            return `Error: User ${userId} has no cart!`;
+            throw new Error(`Cart for user ${userId} not found!`);
         } else {
             //check if the bag, so the cartItem, is in the cart
             //cartItem -> bag -> retrieve bagId
             const index = this.carts[userId].items.findIndex(item => item.bag.id === bagId);
             if (index === -1) {
-                return `Error: Bag ${bagId} not found in the cart!`;
+                throw new Error(`Bag ${bagId} not found in the cart!`);
             } else {
                 //remove the bag from the cart
                 this.carts[userId].items.splice(index, 1);
@@ -351,7 +377,7 @@ const ReservationRepoTesting = {
             const index = this.reservations.findIndex(r => r.id === reservationId);
 
             if (index === -1) {
-                return "Error: Reservation not found!";
+                throw new Error(`Error: Reservation ${reservationId} not found!`);
             }
 
             //this.reservations[index].cancel();
@@ -524,8 +550,12 @@ async function deleteUser(userRepo){
     server.delete("/users/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);
-        const user = await userRepo.deleteUser(id);
-        return res.json(user);
+        try {
+            const user = await userRepo.deleteUser(id);
+            return res.json(user);
+        } catch (error) {
+            return res.status(404).json({ error: error.message });
+        }
     });
 }
 
@@ -556,13 +586,36 @@ async function getBag(bagRepo){
     });
 }
 
-//list all the available bags
-async function listAvailableBags(bagRepo){
+//get bags by establishment id
+async function listBags(bagRepo) {
     server.get("/bags", async (req, res) => {
-        const res_ = await bagRepo.listAvailable();
+        //get estId and convert it to number
+        const queryEstId = req.query.estId;
+
+
+        //case1: if no query parameter is passed
+        //example: /bags
+        //simply list all the available bags
+        if (!queryEstId){
+            const res_ = await bagRepo.listAvailable();
+            if (!res){
+                return res.status(404).json({ error: "No bags available!" });
+            }
+            return res.json(res_);
+        }
+
+
+        //case2: if query parameter is passed
+        //example: /bags?estId=1
+        //list all the bags of the establishment by estId
+        const estId = parseInt(queryEstId);
+
+        const res_ = await bagRepo.getBagsByEstId(estId);
+        if (!res_){
+            return res.status(400).json({ error: `Bags for establishment ${estId} not found!` });
+        }
         return res.json(res_);
     });
-
 
 }
 
@@ -601,10 +654,16 @@ async function removeBag(cartRepo){
     server.delete("/carts/:userId/bags/:bagId", async (req, res) => {
         const userId = parseInt(req.params.userId);
         const bagId = parseInt(req.params.bagId);
-        const result = await cartRepo.removeBag(userId, bagId);
-        return res.json(result);
+        //catch the eventually thrown error
+        try {
+            const result = await cartRepo.removeBag(userId, bagId);
+            return res.json(result);
+        } catch (error) {
+            return res.status(404).json({ error: error.message });
+        }
     });
-}   
+}  
+
 
 
 /* RESERVATION ENDPOINTS */
@@ -703,11 +762,12 @@ async function createReservation(userRepo, cartRepo, resRepo){
 /* delete a reservation done by userid   - GET*/
 async function deleteReservation(resRepo){
     server.delete("/reservations/:id", async (req, res) => {
-        const res_ = await resRepo.cancelReservation(req.params.id);
-        if (res_.startsWith("Error")){
-            return res.status(404).json({ error: "Reservation not found!" });
-        } else {
+        //try catch error
+        try {
+            const res_ = await resRepo.cancelReservation(req.params.id);
             return res.json(res_);
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
         }
     });
 }
@@ -740,20 +800,6 @@ async function getEstablishment(estRepo) {
 }
 
 
-async function getEstablishmentBags(estRepo) {
-    server.get("/establishments/:estId/bags", async (req, res) => {
-        //get estId and convert it to number
-        const estId = parseInt(req.params.estId);
-
-        const res_ = await estRepo.getEstablishmentBags(estId);
-        if (!res_){
-            return res.status(400).json({ error: "Establishment not found or it doen't have bags" });
-        }
-        return res.json(res_);
-    });
-
-}
-
 
 async function deleteEstablishment(estRepo) {
     server.delete("/establishments/:estId", async (req, res) => {
@@ -779,7 +825,7 @@ deleteUser(UserRepoTesting);
 //For Bag
 createBag(BagRepoTesting);
 getBag(BagRepoTesting);
-listAvailableBags(BagRepoTesting);
+listBags(BagRepoTesting);
 
 //For Cart
 getCart(CartRepoTesting);
@@ -795,8 +841,7 @@ getReservations(ReservationRepoTesting);
 
 //For Establishment
 createEstablishment(EstablishmentRepoTesting);
-getEstablishment(EstablishmentRepoTesting);
-getEstablishmentBags(EstablishmentRepoTesting);    
+getEstablishment(EstablishmentRepoTesting);  
 deleteEstablishment(EstablishmentRepoTesting);
 
 

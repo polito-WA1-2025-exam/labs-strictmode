@@ -163,6 +163,12 @@ Content-Type: application/json
 #Get a bag by bagId [GET Method]
 GET http://localhost:3001/bags/1
 
+###
+
+
+#Get all bags by estId [GET Method]
+#http://localhost:3001/bags?estId={ESTID}
+GET http://localhost:3001/bags?estId=1
 
 ###
 
