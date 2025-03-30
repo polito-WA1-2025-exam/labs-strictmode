@@ -5,16 +5,14 @@ import dayjs from "dayjs";
 /* import models */
 import {Bag, User, Establishment, Reservation, Cart, BagItem, CartItem} from "../models/index.mjs";
 
-
-/* import repos */
-import {CartRepo, ReservationRepo, UserRepo, EstablishmentRepo} from "../repos/index.mjs";
-import e from "express";
+import {createBagsRouter} from "./routes/bags.js";
+import {createUsersRouter} from "./routes/users.js";
+import {createCartsRouter} from "./routes/carts.js";
+import {createEstablishmentsRouter} from "./routes/establishments.js";
+import {createReservationsRouter} from "./routes/reservations.js";
 
 
 const PORT = 3001; //server port
-
-//Server App creation
-const server = express();
 
 
 // TESTING
@@ -468,385 +466,44 @@ const EstablishmentRepoTesting = {
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // END TESTING
 
 
-/* MIDDLEWARES */
 
-//register morgan middleware
-//morgan used for logging about requests on the terminal
-server.use(morgan("dev"));
+// repos: { bagRepo, userRepo, cartRepo, resRepo, estRepo }    
+function startServer(repos) {
+    const server = express();
 
-//register json middleware to send data in json format
-server.use(express.json());
-
-
-
-
-/*ENDPOINTS Handlers */
+    /* MIDDLEWARES */
+    // morgan used for logging about requests on the terminal
+    server.use(morgan("dev"));
+    // register json middleware to send data in json format
+    server.use(express.json());
 
 
-/* home - GET*/
-server.get('/', (req, res) => {
-    //the callback is the handler to the method
-    res.send("Hello World!") //sen content to the client
-    //send method sets the body of the response
-})
+    /* home - GET*/
+    server.get('/', (req, res) => {
+        // the callback is the handler to the method
+        res.send("Hello World!") // send content to the client
+        // send method sets the body of the response
+    })
+
+    server.use("/bags", createBagsRouter(repos));
+    server.use("/users", createUsersRouter(repos));
+    server.use("/carts", createCartsRouter(repos));
+    server.use("/reservations", createReservationsRouter(repos));
+    server.use("/establishments", createEstablishmentsRouter(repos));
 
 
-
-/* USER ENDPOINTS */
-
-//user post endpoint: create a new user
-async function createUser(userRepo){
-     server.post("/users", async (req, res) => {
-        const { email, assignedName, familyName } = req.body;
-        
-        const newUser = await userRepo.createUser(email, assignedName, familyName);
-        return res.json(newUser);
-    });
+    server.listen(PORT, () => {console.log(`Server started on http://localhost:${PORT}`);})
 }
 
-//user put endpoint: update a user
-function updateUser(userRepo){
-    server.put("/users/:id", async (req, res) => {
-        //convert id to number
-        const id = parseInt(req.params.id);
-        const { email, assignedName, familyName } = req.body;
-        const updatedUser = await userRepo.updateUser(id, email, assignedName, familyName);
-        return res.json(updatedUser);
-    });
-}
-
-//user get endpoint: get a user by id
-async function getUserById(userRepo){
-    server.get("/users/:id", async (req, res) => {
-        //convert id to number
-        const id = parseInt(req.params.id);
-        const user = await userRepo.getUserById(id);
-        if (!user) {
-            return res.status(404).json("Error: user not found!");
-        }
-        return res.json(user);
-    });
-}
-
-//user delete endpoint: delete a user by id
-async function deleteUser(userRepo){
-    server.delete("/users/:id", async (req, res) => {
-        //convert id to number
-        const id = parseInt(req.params.id);
-        try {
-            const user = await userRepo.deleteUser(id);
-            return res.json(user);
-        } catch (error) {
-            return res.status(404).json({ error: error.message });
-        }
-    });
-}
-
-
-/* BAG ENDPOINTS */
-
-//create a new bag
-async function  createBag(bagRepo){
-    //the function wants: async createBag(bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd)
-    server.post("/bags", async (req, res) => {
-        const { bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd } = req.body;
-        const newBag = await bagRepo.createBag(bagType, parseInt(estId), parseInt(size), tags, parseFloat(price), pickupTimeStart, pickupTimeEnd);
-        return res.json(newBag);
-
-    });
-}
-
-
-//get bag by bagId
-async function getBag(bagRepo){
-    //async getBag(bagId)
-    server.get("/bags/:bagId", async (req, res) => {
-        const res_ = await bagRepo.getBag(parseInt(req.params.bagId));
-        if (!res_){
-            return res.status(404).json({ error: "Bag not found!" });
-        }
-        return res.json(res_);
-    });
-}
-
-//get bags by establishment id
-async function listBags(bagRepo) {
-    server.get("/bags", async (req, res) => {
-        //get estId and convert it to number
-        const queryEstId = req.query.estId;
-
-
-        //case1: if no query parameter is passed
-        //example: /bags
-        //simply list all the available bags
-        if (!queryEstId){
-            const res_ = await bagRepo.listAvailable();
-            if (!res){
-                return res.status(404).json({ error: "No bags available!" });
-            }
-            return res.json(res_);
-        }
-
-
-        //case2: if query parameter is passed
-        //example: /bags?estId=1
-        //list all the bags of the establishment by estId
-        const estId = parseInt(queryEstId);
-
-        const res_ = await bagRepo.getBagsByEstId(estId);
-        if (!res_){
-            return res.status(400).json({ error: `Bags for establishment ${estId} not found!` });
-        }
-        return res.json(res_);
-    });
-
-}
-
-
-
-
-
-
-
-/* CART ENDPOINTS */
-
-//get cart by userid
-async function getCart(cartRepo){
-    server.get("/carts/:userId", async (req, res) => {
-        const userId = parseInt(req.params.userId);
-        const cart = await cartRepo.getCart(userId);
-        if (!cart) {
-            return res.status(404).json({ error: `Cart for user ${userId} not found!` });
-        }
-        return res.json(cart);
-    });
-}
-
-//add bag, so a cartItem, to cart by userid
-async function addBag(cartRepo){
-    server.post("/carts/:userId/bags", async (req, res) => {
-        const userId = parseInt(req.params.userId);
-        const { bagId } = req.body;
-        const result = await cartRepo.addBag(userId, parseInt(bagId));
-        return res.json(result);
-    });
-}
-
-//remove bag, so a cartItem, from cart by userid
-async function removeBag(cartRepo){
-    server.delete("/carts/:userId/bags/:bagId", async (req, res) => {
-        const userId = parseInt(req.params.userId);
-        const bagId = parseInt(req.params.bagId);
-        //catch the eventually thrown error
-        try {
-            const result = await cartRepo.removeBag(userId, bagId);
-            return res.json(result);
-        } catch (error) {
-            return res.status(404).json({ error: error.message });
-        }
-    });
-}  
-
-
-
-/* RESERVATION ENDPOINTS */
-
-/* /reservations - GET*/
-async function getReservations(resRepo){
-    server.get("/reservations", async (req, res) => {
-        let res_ = await resRepo.getReservations();
-        if (!res_){
-            return res.status(404).json({ error: "Reservations not found!" });
-        }
-        return res.json(res_);
-    });
-}
-
-/* creation of new reservation by userid - POST */
-
-async function createReservation(userRepo, cartRepo, resRepo){
-    server.post("/reservations", async (req, res) => {
-        const { userId} = req.body;
-
-        const user = await userRepo.getUserById(userId);
-        if (!user) {
-            return res.status(400).json({ error: "User not found" });
-        }
-
-        //for working with a sample pre set cart, use:
-        //const userCart = await cartRepo.getCart_Sample(userId);  //Retrieve user's cart
-        //otherwise, use:
-        const userCart = await cartRepo.getCart(userId);  //Retrieve user's cart 
-
-        //check if the user has a cart, if not there's no sense in doing a reservation
-        if (!userCart) {
-            return res.status(400).json({ error: "User has no cart!" });
-        }
-
-
-        //User's cart contains all the bags
-        //iterate over all the bags and:
-        //1. do all the checks
-        //2. create a separate revservation for each bag
-
-        const successfulReservations = [];
-
-        for (const cartItem of userCart.getCartItems()){
-            //1. for each bag do all the checks
-
-            //a. Check Expiration date
-            const reservationTime = dayjs().toDate(); //.getTime(); //in millis
-
-            //retrieve cart item bag creation Time
-            const cartItemBagTimeEnd = cartItem.bag.pickupTimeEnd.toDate(); //.getTime(); //in millis
-
-
-            if (cartItemBagTimeEnd <= reservationTime){
-                return res.status(400).json({ error: `Cart Item (having ID ${cartItem.bag.id}) already expired!` });
-            } else {
-                console.log("Test_a OK");
-            }
-
-            //b. Check is bag is not already reserved by other userids
-
-            if (cartItem.bag.reservedBy !== null){
-                return res.status(400).json({ error: `Cart Item (having ID ${cartItem.bag.id}) already reserved!` });
-            } else {
-                console.log("Test_b OK");
-            }
-
-
-            //c. check if cartitem is empty: if it is, there's nopo sense in doing a revservation
-            if (cartItem.bag.items.length == 0){
-                return res.status(400).json({ error: `Cart Item (having ID ${cartItem.bag.id}) is empty!` });
-            } else {
-                console.log("Test_c OK");
-            }
-
-            //set cartItem as reserved
-            cartItem.bag.reservedBy = userId;
-
-            /*
-            In production use: ReservationRepo.createReservations(userId, cartItems) method
-            */
-
-            /*Here, just for testing purposes, we use: */
-            //const reservation = new Reservation(null, user, cartItem);
-            const res_ = resRepo.createReservationSingle(userId, cartItem);
-            successfulReservations.push(res_);
-        }
-
-        //if no errors, return all the reservations made
-        return res.json(successfulReservations);
-    });
-}
-
-
-/* delete a reservation done by userid   - GET*/
-async function deleteReservation(resRepo){
-    server.delete("/reservations/:id", async (req, res) => {
-        //try catch error
-        try {
-            const res_ = await resRepo.cancelReservation(req.params.id);
-            return res.json(res_);
-        } catch (error) {
-            return res.status(400).json({ error: error.message });
-        }
-    });
-}
-
-
-
-/* ESTABLISHMENT ENDPOINTS */
-
-async function createEstablishment(estRepo){
-    server.post("/establishments", async (req, res) => {
-        //create a new establishment by name, estType
-        const { name, estType } = req.body;
-        const res_ = await estRepo.createEstablishment(name, estType);
-        return res.json(res_);
-    });
-}
-
-
-async function getEstablishment(estRepo) {
-    server.get("/establishments/:estId", async (req, res) => {
-        //get estId and convert it to number
-        const estId = parseInt(req.params.estId);
-
-        const res_ = await estRepo.getEstablishment(estId);
-        if (!res_){
-            return res.status(400).json({ error: "Establishment not found!" });
-        }
-        return res.json(res_);
-    });
-}
-
-
-
-async function deleteEstablishment(estRepo) {
-    server.delete("/establishments/:estId", async (req, res) => {
-        //get estId and convert it to number
-        const estId = parseInt(req.params.estId);
-
-        const res_ = await estRepo.deleteEstablishment(estId);
-        return res.json(res_);
-    });
-
-}
-
-
-
-//REGISTER TESTING ENDPOINTS
-
-//For User
-createUser(UserRepoTesting);
-updateUser(UserRepoTesting);
-getUserById(UserRepoTesting);
-deleteUser(UserRepoTesting);
-
-//For Bag
-createBag(BagRepoTesting);
-getBag(BagRepoTesting);
-listBags(BagRepoTesting);
-
-//For Cart
-getCart(CartRepoTesting);
-addBag(CartRepoTesting);
-removeBag(CartRepoTesting);
-
-
-//For Reservation
-createReservation(UserRepoTesting, CartRepoTesting, ReservationRepoTesting);
-deleteReservation(ReservationRepoTesting);
-getReservations(ReservationRepoTesting);
-
-
-//For Establishment
-createEstablishment(EstablishmentRepoTesting);
-getEstablishment(EstablishmentRepoTesting);  
-deleteEstablishment(EstablishmentRepoTesting);
-
-
-//start the app AFTER all the middlewares registrations
-server.listen(PORT, () => {console.log(`Server started on http://localhost:${PORT}`);})
-
+startServer({
+    bagRepo: BagRepoTesting,
+    userRepo: UserRepoTesting,
+    cartRepo: CartRepoTesting,
+    resRepo: ReservationRepoTesting,
+    estRepo: EstablishmentRepoTesting
+});
 
 

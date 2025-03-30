@@ -1,4 +1,6 @@
 {
+  "name": "labs-strictmode",
+  "type": "module",
   "dependencies": {
     "dayjs": "^1.11.13",
     "express": "^4.21.2",
