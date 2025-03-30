@@ -10,11 +10,11 @@ export function createBagsRouter({bagRepo}) {
         //example: /bags
         //simply list all the available bags
         if (!queryEstId){
-            const res_ = await bagRepo.listAvailable();
-            if (!res){
+            const bags = await bagRepo.listAvailable();
+            if (!bags){
                 return res.status(404).json({ error: "No bags available!" });
             }
-            return res.json(res_);
+            return res.json(bags);
         }
 
         //case2: if query parameter is passed
@@ -22,11 +22,11 @@ export function createBagsRouter({bagRepo}) {
         //list all the bags of the establishment by estId
         const estId = parseInt(queryEstId);
 
-        const res_ = await bagRepo.getBagsByEstId(estId);
-        if (!res_){
+        const bags = await bagRepo.getBagsByEstId(estId);
+        if (!bags){
             return res.status(400).json({ error: `Bags for establishment ${estId} not found!` });
         }
-        return res.json(res_);
+        return res.json(bags);
     });
 
     router.post("/", async (req, res) => {
@@ -36,11 +36,11 @@ export function createBagsRouter({bagRepo}) {
     });
 
     router.get("/:bagId", async (req, res) => {
-        const res_ = await bagRepo.getBag(parseInt(req.params.bagId));
-        if (!res_){
+        const bag = await bagRepo.getBag(parseInt(req.params.bagId));
+        if (!bag){
             return res.status(404).json({ error: "Bag not found!" });
         }
-        return res.json(res_);
+        return res.json(bag);
     });
 
     return router;
