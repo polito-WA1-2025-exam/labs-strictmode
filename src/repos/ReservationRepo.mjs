@@ -1,6 +1,6 @@
 import sqlite3 from 'sqlite3';
 import {pathDbFromRepos, connect} from '../../database/index.js';
-import { Reservation } from '../models/index.mjs'
+import Reservation from '../models/index.mjs'
 
 export class ReservationRepo {
 

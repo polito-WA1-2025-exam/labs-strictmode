@@ -1,6 +1,6 @@
-import Cart from "../models/Cart.mjs";
 import sqlite3 from 'sqlite3';
 import {pathDbFromRepos, connect} from '../../database/index.js';
+import Cart from '../models/index.mjs'
 
 /**
  * Class representing a repository for managing a shopping cart.
