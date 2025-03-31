@@ -22,7 +22,7 @@ export function createCartsRouter({ cartRepo, userRepo }) {
     router.post("/:userId/bags", async (req, res) => {
         const userId = parseInt(req.params.userId);
          //verify the user actually exists
-        if (!userRepo.getUserById/userId){
+        if (!userRepo.getUserById(userId)){
             return res.status(404).json({ error: `User ${userId} not found!` });
         }
         const { bagId } = req.body;
