@@ -65,7 +65,7 @@ function isValidBagSize(size){
         return false;
     }
     //transform size to lowercase and check if it is valid
-    if (size.toLowerCase() === "small" || size.toLowerCase() === "medium" || size.toLowerCase() === "large") {
+    if (size === "small" || size === "medium" || size === "large") {
         return true;
     }
     return false;
@@ -77,7 +77,7 @@ function isValidBagType(bagType) {
         return false;
     }
     //transform bagType to lowercase and check if it is valid
-    if (bagType.toLowerCase() === "regular" || bagType.toLowerCase() === "surprise") {
+    if (bagType === "regular" || bagType === "surprise") {
         return true;
     }
     return false;
