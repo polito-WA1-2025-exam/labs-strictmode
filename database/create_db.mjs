@@ -46,7 +46,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         tags VARCHAR(200),
         price REAL,
         pickupTimeStart DATE,
-        pickUpTimeEnd DATE,
+        pickupTimeEnd DATE,
         available BOOLEAN,
         FOREIGN KEY (estId) REFERENCES ESTABLISHMENT(id)
       )`, handleError);
@@ -73,8 +73,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         estType VARCHAR(20)
       )`, handleError);
 
-      // Create CART_ELEMENT table
-      db.run(`CREATE TABLE IF NOT EXISTS CART_ELEMENT (
+      // Create CART_ITEM table
+      db.run(`CREATE TABLE IF NOT EXISTS CART_ITEM (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         userId INTEGER,
         bagId INTEGER, 
@@ -83,16 +83,16 @@ const db = new sqlite3.Database(dbPath, (err) => {
         FOREIGN KEY (userId) REFERENCES USER (id),
         FOREIGN KEY (bagId) REFERENCES BAG (id),
         FOREIGN KEY (bagItemId) REFERENCES BAG_ITEM (id)
-      )`, handleError)
+      )`, handleError);
 
       // Create PURCHASE table
       db.run(`CREATE TABLE IF NOT EXISTS PURCHASE (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         reservationId INTEGER,
-        cartElementId INTEGER,
+        cartItemId INTEGER,
         FOREIGN KEY (reservationId) REFERENCES RESERVATION(id),
-        FOREIGN KEY (cartElementId) REFERENCES CART_ELEMENT(id)
-      )`, handleError); 
+        FOREIGN KEY (cartItemId) REFERENCES CART_ITEM(id)
+      )`, handleError);
 
       // Create RESERVATION table
       db.run(`CREATE TABLE IF NOT EXISTS RESERVATION (
@@ -102,11 +102,31 @@ const db = new sqlite3.Database(dbPath, (err) => {
         canceledAt DATE NULL,
         totPrice REAL,
         FOREIGN KEY (userId) REFERENCES USER(id)
-      )`, handleError); 
+      )`, handleError);
 
       // Create index to improve performance
       db.run(`CREATE INDEX IF NOT EXISTS idx_bag_item_bagid ON BAG_ITEM(bagId)`, handleError);
 
+      // Create trigger to automatically update 'available' to 0 if current time > pickupTimeEnd
+      db.run(`CREATE TRIGGER IF NOT EXISTS update_available_status
+          AFTER INSERT ON BAG
+          FOR EACH ROW
+          WHEN strftime('%s', CURRENT_TIMESTAMP) > strftime('%s', NEW.pickupTimeEnd)
+          BEGIN
+              UPDATE BAG SET available = 0 WHERE id = NEW.id;
+          END;`, handleError);
+
+      // Another trigger for AFTER UPDATE if pickupTimeEnd is updated
+      db.run(`CREATE TRIGGER IF NOT EXISTS update_available_status_on_update
+          AFTER UPDATE ON BAG
+          FOR EACH ROW
+          WHEN strftime('%s', CURRENT_TIMESTAMP) > strftime('%s', NEW.pickupTimeEnd)
+          AND NEW.available != 0
+          BEGIN
+              UPDATE BAG SET available = 0 WHERE id = NEW.id;
+          END;`, handleError);
+
+      // Commit the transaction
       db.run('COMMIT', (err) => {
         if (err) {
           console.error('Error committing transaction:', err.message);
