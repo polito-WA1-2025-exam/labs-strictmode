@@ -11,7 +11,7 @@ export class Bag {
      * @param {number} id - Unique identifier for the bag.
      * @param {string} bagType - Type of the bag (e.g., "regular", "surprise").
      * @param {number} estId - The establishment ID associated with the bag.
-     * @param {number} size - "small", "medium", "large".
+     * @param {string} size - "small", "medium", "large".
      * @param {Array<string>} tags - Example: ["vegan", "gluten free"].
      * @param {number} price - The price of the bag.
      * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
