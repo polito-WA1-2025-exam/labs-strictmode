@@ -1,4 +1,6 @@
 import express from "express";
+import { isValidString, isValidBagSize, isValidBagType, isValidISODate } from "../utils.mjs";
+
 export function createBagsRouter({bagRepo}) {
     const router = express.Router();
 
@@ -33,7 +35,23 @@ export function createBagsRouter({bagRepo}) {
     // create a new bag
     router.post("/", async (req, res) => {
         const { bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd } = req.body;
-        const newBag = await bagRepo.createBag(bagType, parseInt(estId), parseInt(size), tags, parseFloat(price), pickupTimeStart, pickupTimeEnd);
+        //check is bagType is valid
+        if (!isValidBagType(bagType)) {
+            return res.status(400).json("Error: invalid bag type!");
+        }
+        //check is size is valid
+        if (!isValidBagSize(size)) {
+            return res.status(400).json("Error: invalid bag size!");
+        }
+        //check if pickupTimeStart and pickupTimeEnd are valid
+        if (!isValidISODate(pickupTimeStart)) {
+            return res.status(400).json("Error: invalid pickup time start!");
+        }
+        if (!isValidISODate(pickupTimeEnd)) {
+            return res.status(400).json("Error: invalid pickup time end!");
+        }
+
+        const newBag = await bagRepo.createBag(bagType, parseInt(estId), size, tags, parseFloat(price), pickupTimeStart, pickupTimeEnd);
         return res.json(newBag);
     });
 
