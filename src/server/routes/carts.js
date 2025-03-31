@@ -3,6 +3,7 @@ import express from "express";
 export function createCartsRouter({ cartRepo }) {
     const router = express.Router();
 
+    // get cart by userId
     router.get("/:userId", async (req, res) => {
         const userId = parseInt(req.params.userId);
         const cart = await cartRepo.getCart(userId);

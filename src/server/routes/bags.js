@@ -2,6 +2,7 @@ import express from "express";
 export function createBagsRouter({bagRepo}) {
     const router = express.Router();
 
+    // get bags (optional establishment id filter)
     router.get("/", async (req, res) => {
         //get estId and convert it to number
         const queryEstId = req.query.estId;
@@ -29,12 +30,14 @@ export function createBagsRouter({bagRepo}) {
         return res.json(bags);
     });
 
+    // create a new bag
     router.post("/", async (req, res) => {
         const { bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd } = req.body;
         const newBag = await bagRepo.createBag(bagType, parseInt(estId), parseInt(size), tags, parseFloat(price), pickupTimeStart, pickupTimeEnd);
         return res.json(newBag);
     });
 
+    // get bag by bagId
     router.get("/:bagId", async (req, res) => {
         const bag = await bagRepo.getBag(parseInt(req.params.bagId));
         if (!bag){

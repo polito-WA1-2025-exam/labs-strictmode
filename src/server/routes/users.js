@@ -2,6 +2,7 @@ import express from "express";
 export function createUsersRouter({ userRepo }) {
     const router = express.Router();
     
+    // create a new user
     router.post("/", async (req, res) => {
         const { email, assignedName, familyName } = req.body;
         
@@ -9,6 +10,7 @@ export function createUsersRouter({ userRepo }) {
         return res.json(newUser);
     });
 
+    // update a user by id
     router.put("/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);
@@ -17,6 +19,7 @@ export function createUsersRouter({ userRepo }) {
         return res.json(updatedUser);
     });
 
+    // get a user by id
     router.get("/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);
@@ -27,6 +30,7 @@ export function createUsersRouter({ userRepo }) {
         return res.json(user);
     });
 
+    // delete a user by id
     router.delete("/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);

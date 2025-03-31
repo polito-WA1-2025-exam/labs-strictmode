@@ -12,7 +12,7 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
         return res.json(res_);
     });
 
-    /* creation of new reservation by userid - POST */
+    // creation of new reservation for userid
     router.post("/", async (req, res) => {
         const { userId} = req.body;
 
@@ -88,6 +88,7 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
         return res.json(successfulReservations);
     });
 
+    // delete a reservation by id
     router.delete("/:id", async (req, res) => {
         //try catch error
         try {
