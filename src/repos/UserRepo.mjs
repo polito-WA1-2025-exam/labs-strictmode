@@ -12,46 +12,63 @@ export class UserRepo {
     /**
      * @param {string} email
      * @param {string} password
-     * @param {int} prefixPhoneNumber
-     * @param {int} phoneNumber
+     * @param {number} prefixPhoneNumber
+     * @param {number} phoneNumber
      * @param {string} assignedName
      * @param {string} familyName
      * @returns {User}
      */
     async createUser(email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName) {
         let query = 'INSERT INTO USER (email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName) VALUES (?, ?, ?, ?, ?, ?)';
-        this.DB.run(query, [email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName], (err) =>{
-            if (err) {
-                console.error('Error inserting user: ', err.message);
-            } else {
-                console.log('User inserted successfully');
-            }
-        });
+        return new Promise ((resolve, reject) => {
+            this.DB.run(query, [email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName], (err) =>{
+                if (err) {
+                    console.error('Error inserting user: ', err.message);
+                    reject(err);
+                } else {
+                    console.log('User inserted successfully');
+                    resolve(null);
+                }
+            });
+        })
     }
     /**
      * @param {number} id
      * @param {string} email
      * @param {string} password
-     * @param {int} prefixPhoneNumber
-     * @param {int} phoneNumber
+     * @param {number} prefixPhoneNumber
+     * @param {number} phoneNumber
      * @param {string} assignedName
      * @param {string} familyName
      */
-    async updateUser(id, email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName) { }
+    async updateUser(id, email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName) {
+        let query = "UPDATE USER SET email = ?, password = ?, prefixPhoneNumber = ?, phoneNumber = ?, assignedName = ?, familyName = ? WHERE id = ?"
+        return new Promise ((resolve, reject) => {
+            this.DB.run(query, [email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName, id], (err) => {
+                if (err) {
+                    console.error('Error updating user: ', err.message);
+                    reject(err);
+                } else {
+                    console.log('User updated successfully');
+                    resolve(null);
+                }
+            })
+        })
+    }
     /**
      * @param {number} id
      * @returns {User}
      */
     async getUserById(id) { 
-        let query = 'SELECT * FROM USER WHERE userId = ?';
+        let query = 'SELECT * FROM USER WHERE id = ?';
         return new Promise ((resolve, reject) => {
             this.DB.all(query, [id], (err, row) => {
                 if (err) {
-                    console.error('Error inserting user: ', err.message);
+                    console.error('Error retriving user: ', err.message);
                     reject(err);
                 } else {
                     if (row) {
-                        let id = row[0].userId;
+                        let id = row[0].id;
                         let email = row[0].email;
                         let password = row[0].password;
                         let prefixPhoneNumber = parseInt(row[0].password, 10);

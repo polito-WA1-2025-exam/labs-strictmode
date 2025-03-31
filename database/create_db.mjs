@@ -1,5 +1,10 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+import sqlite3 from 'sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get `__dirname` equivalent in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Create a new database or open an existing one
 const dbPath = path.join(__dirname, 'reservation_system.db');
@@ -23,7 +28,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // Create USER table
       db.run(`CREATE TABLE IF NOT EXISTS USER (
-        userId INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         email VARCHAR(20),
         password VARCHAR(20),
         prefixPhoneNumber INTEGER,
@@ -34,7 +39,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // Create BAG table
       db.run(`CREATE TABLE IF NOT EXISTS BAG (
-        bagId INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         estId INTEGER,
         size VARCHAR(20),
         bagType VARCHAR(20),
@@ -43,24 +48,22 @@ const db = new sqlite3.Database(dbPath, (err) => {
         pickupTimeStart DATE,
         pickUpTimeEnd DATE,
         available BOOLEAN,
-        FOREIGN KEY (estId) REFERENCES ESTABLISHMENT(estId)
+        FOREIGN KEY (estId) REFERENCES ESTABLISHMENT(id)
       )`, handleError);
 
       // Create BAG_ITEM table
       db.run(`CREATE TABLE IF NOT EXISTS BAG_ITEM (
-        bagItemId INTEGER,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         bagId INTEGER,
         name VARCHAR(20),
         quantity REAL,
         measurementUnit VARCHAR(5),
-        included BOOLEAN,
-        PRIMARY KEY (bagId, bagItemId),
-        FOREIGN KEY (bagId) REFERENCES BAG(bagId)
+        FOREIGN KEY (bagId) REFERENCES BAG(id)
       )`, handleError);
 
       // Create ESTABLISHMENT table
       db.run(`CREATE TABLE IF NOT EXISTS ESTABLISHMENT (
-        estId INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         email VARCHAR(20),
         password VARCHAR(20),
         prefixPhoneNumber INTEGER,
@@ -70,34 +73,35 @@ const db = new sqlite3.Database(dbPath, (err) => {
         estType VARCHAR(20)
       )`, handleError);
 
-      // Create PURCHASE table (fixed syntax)
+      // Create CART_ELEMENT table
+      db.run(`CREATE TABLE IF NOT EXISTS CART_ELEMENT (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId INTEGER,
+        bagId INTEGER, 
+        bagItemId INTEGER,
+        included_in_cart BOOLEAN,
+        FOREIGN KEY (userId) REFERENCES USER (id),
+        FOREIGN KEY (bagId) REFERENCES BAG (id),
+        FOREIGN KEY (bagItemId) REFERENCES BAG_ITEM (id)
+      )`, handleError)
+
+      // Create PURCHASE table
       db.run(`CREATE TABLE IF NOT EXISTS PURCHASE (
-        purchaseId INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         reservationId INTEGER,
-        bagId INTEGER,
-        FOREIGN KEY (reservationId) REFERENCES RESERVATION(reservationId),
-        FOREIGN KEY (bagId) REFERENCES BAG(bagId)
+        cartElementId INTEGER,
+        FOREIGN KEY (reservationId) REFERENCES RESERVATION(id),
+        FOREIGN KEY (cartElementId) REFERENCES CART_ELEMENT(id)
       )`, handleError); 
 
-      // Create RESERVATION table (fixed syntax)
+      // Create RESERVATION table
       db.run(`CREATE TABLE IF NOT EXISTS RESERVATION (
-        reservationId INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         userId INTEGER,
         createdAt DATE,
         canceledAt DATE NULL,
         totPrice REAL,
-        FOREIGN KEY (userId) REFERENCES USER(userId)
-      )`, handleError); 
-
-      // Create TEMP_CART table (fixed syntax)
-      db.run(`CREATE TABLE IF NOT EXISTS TEMP_CART (
-        bagItemId INTEGER,
-        bagId INTEGER,
-        userId INTEGER,
-        PRIMARY KEY (bagItemId, bagId, userId),
-        FOREIGN KEY (bagItemId) REFERENCES BAG_ITEM(bagItemId),
-        FOREIGN KEY (bagId) REFERENCES BAG(bagId),
-        FOREIGN KEY (userId) REFERENCES USER(userId)
+        FOREIGN KEY (userId) REFERENCES USER(id)
       )`, handleError); 
 
       // Create index to improve performance
