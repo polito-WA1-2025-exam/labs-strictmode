@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import Bag from '../models/index.mjs'
 import BagItem from '../models/index.mjs';
-import BagItemRepo from '../repos/index.mjs'
+import BagItemRepo from './index.mjs'
 
 export class BagRepo {
 
@@ -26,7 +26,7 @@ export class BagRepo {
                 } else {
                     console.log('Bag inserted successfully with ID:', this.lastID);
                     let fetchedBag = this.getBagById(this.lastID);
-                    bagItem_list = this.getItemsInBag(fetchedBag);
+                    bagItem_list = this.getItems(fetchedBag);
                     fetchedBag.items = bagItem_list;
                     resolve(fetchedBag);
                 }
@@ -79,7 +79,7 @@ export class BagRepo {
                         let available = Boolean(row[0].available);
 
                         let fetchedBag = new Bag(id, estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available);
-                        bagItem_list = this.getItemsInBag(fetchedBag);
+                        bagItem_list = this.getItems(fetchedBag);
                         fetchedBag.items = bagItem_list;
                         resolve(fetchedBag);
                     } else {
@@ -90,7 +90,57 @@ export class BagRepo {
         })
     }
 
+
+    /**
+     * @param {Bag} bag
+     * @returns {Array<BagItem>}
+     */
+
+    async getItems(bag) {
+        // TODO
+        let bagItemRepo = new BagItemRepo();
+        bagItem_list = bagItemRepo.getBagItemListByBagItemId(bag.id);
+        return bagItem_list;
+    }
+
     
+    async getBagListByEstId(estId) {
+        let query = 'SELECT * FROM BAG WHERE estId = ?';
+        return new Promise((resolve, reject) => {
+            thid.DB.all(query, [estId], (err, rows) => {
+                if (err) {
+                    console.error('Error retrieving bagg list ', err.message);
+                    reject(err);
+                } else {
+                    if (rows) {
+                        let bag_list = [];
+
+                        rows.forEach(row => {
+                            let id = parseInt(row.id, 10);
+                            let estId = parseInt(row.estId, 10);
+                            let size = row.size;
+                            let bagType = row.bagType;
+                            let tags = row.tags;
+                            let price = parseFloat(row.price);
+                            let pickupTimeStart = row.pickupTimeStart
+                            let pickupTimeEnd = row.pickupTimeEnd
+                            let available = Boolean(row.available)
+
+                            let fetchedBag = new Bag(id, estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available);
+                            bagItem_list = this.getItems(fetchedBag);
+                            fetchedBag.items = bagItem_list;
+
+                            bag_list.push(fetchedBag);
+                        })
+                        resolve(bag_list)
+
+                    } else {
+                        resolve(null);
+                    }
+                }
+            })
+        })  
+    }
 
     /**
      * Lists all the available bags, from every establishment.
@@ -121,7 +171,7 @@ export class BagRepo {
                             let available = Boolean(row.available);
     
                             let fetchedBag = new Bag(id, estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available);
-                            bagItem_list = this.getItemsInBag(fetchedBag);
+                            bagItem_list = this.getItems(fetchedBag);
                             fetchedBag.items = bagItem_list;
 
                             bag_list.push(fetchedBag);
@@ -133,19 +183,6 @@ export class BagRepo {
                 }                   
             })
         })
-    }
-
-
-    /**
-     * @param {Bag} bag
-     * @returns {Array<BagItem>}
-     */
-
-    async getItemsInBag(bag) {
-        // TODO
-        let bagItemRepo = new BagItemRepo();
-        bagItem_list = bagItemRepo.getBagItemListByBagItemId(bag.id);
-        return bagItem_list;
     }
     
 

@@ -1,7 +1,7 @@
 export class Establishment {
-    constructor(id, bags, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType) {
+    constructor(id, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType) {
         this.id = id;
-        this.bags = bags;
+        this.bag_list = [];
         this.email = email;
         this.password = password;
         this.prefixPhoneNumber = prefixPhoneNumber;

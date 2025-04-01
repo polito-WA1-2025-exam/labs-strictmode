@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import Establishment from '../models/index.mjs'
+import { BagRepo } from './index.mjs';
 
 export class EstablishmentRepo {
 
@@ -23,6 +24,8 @@ export class EstablishmentRepo {
                 } else {
                     console.log('Establishment inserted successfully with ID:', this.lastID);
                     let fetchedEstablishment = this.getEstablishmentById(this.lastID);
+                    bag_list = this.getBags(fetchedEstablishment);
+                    fetchedEstablishment.bag_list = bag_list;
                     resolve(fetchedEstablishment);
                 }
             })
@@ -72,9 +75,9 @@ export class EstablishmentRepo {
                         let name = row[0].name;
                         let estType = row[0].estType;
                         
-                        let fetchedEstablishment = new Establishment(id, bags, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
-
-                        // get bags
+                        let fetchedEstablishment = new Establishment(id, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
+                        bag_list = this.getBags(fetchedEstablishment);
+                        fetchedEstablishment.bag_list = bag_list;
                         
                         resolve(fetchedEstablishment);
                     } else {
@@ -83,6 +86,18 @@ export class EstablishmentRepo {
                 }
             })
         })
+    }
+
+    /**
+     * 
+     * @param {Establishment} establishment 
+     * @returns {Array<Bag>}
+     */
+
+    async getBags(establishment) {
+        let bagRepo = new BagRepo();
+        bag_list = bagRepo.getBagListByEstId(establishment.id);
+        return bag_list;
     }
 
     /**
@@ -111,8 +126,10 @@ export class EstablishmentRepo {
                             let contactEmail = row[0].contactEmail;
                             let name = row[0].name;
                             let estType = row[0].estType;
-                            
-                            let fetchedEstablishment = new Establishment(id, bags, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
+
+                            let fetchedEstablishment = new Establishment(id, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
+                            bag_list = this.getBags(fetchedEstablishment);
+                            fetchedEstablishment.bag_list = bag_list;
 
                             establishment_list.push(fetchedEstablishment);
                         })

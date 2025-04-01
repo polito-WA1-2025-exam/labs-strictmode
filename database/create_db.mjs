@@ -90,6 +90,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         reservationId INTEGER,
         cartItemId INTEGER,
+        addedAt DATE,
         FOREIGN KEY (reservationId) REFERENCES RESERVATION(id),
         FOREIGN KEY (cartItemId) REFERENCES CART_ITEM(id)
       )`, handleError);
