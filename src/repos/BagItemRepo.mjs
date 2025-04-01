@@ -11,44 +11,34 @@ export class BagItemRepo {
 
     /**
      * 
-     * @param {number} bagId 
-     * @param {string} name 
-     * @param {real} quantity 
-     * @param {string} measurementUnit 
-     * @returns 
+     * @param {BagItem} bagItem
+     * @returns {BagItem}
      */
 
-    async createBagItem(bagId, name, quantity, measurementUnit) {
+    async createBagItem(bagItem) {
         let query = 'INSERT INTO BAG_ITEM (bagId, name, quantity, measurementUnit) VALUES (?, ?, ?, ?)';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [bagId, name, quantity, measurementUnit], function (err) {
+            this.DB.all(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit], function (err) {
                 if (err) {
                     console.error('Error inserting bagItem:', err.message);
                     reject(null);
                 } else {
                     console.log('BagItem inserted successfully with ID:', this.lastID);
-                    let bagItem = this.getBagItem(this.lastID);
-                    resolve(bagitem);
+                    let fetchedBagItem = this.getBagItemById(this.lastID);
+                    resolve(fetchedBagItem);
                 }
             });
         });
     }
 
-    async getBagItem(id) {
-        // FINISH THIS
-    }
-    
     /**
      * Updates the attributes of an item in the bag.
-     * @param {number} bagId
-     * @param {string} name
-     * @param {number} quantity - Must always be greater than 0.
-     * @param {string} measurementUnit
+     * @param {BagItem} bagItem
      */
-    async updateItem(id, bagId, name, quantity, measurementUnit) {
+    async updateItem(bagItem) {
         let query = 'UPDATE BAG_ITEM SET bagId = ?, name = ?, quantity = ?, measurementUnit = ? WHERE id = ?';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [bagId, name, quantity, measurementUnit, id], (err) => {
+            this.DB.run(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit, bagItem.id], (err) => {
                 if (err) {
                     console.error('Error updating bagItem: ', err.message);
                     reject(err);
@@ -59,7 +49,79 @@ export class BagItemRepo {
             })
         })
     }
+    /**
+     * 
+     * @param {number} id 
+     * @returns 
+     */
 
+    async getBagItemById(id) {
+        let query = 'SELECT * FROM BAG_ITEM WHERE id = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.all(query, [id], (err, row) => {
+                if (err) {
+                    console.log('Error retriving bagItem: ', err.message);
+                    reject(err);
+                } else {
+                    if (row) {
+                        let id = parseInt(row[0].id, 10);
+                        let bagId = parseInt(row[0].bagId, 10);
+                        let name = row[0].name;
+                        let quantity = parseFloat(row[0].quantity);
+                        let measurementUnit = row[0].measurementUnit;
+                        
+                        let fetchedBagItem = new BagItem(id, bagId, name, quantity, measurementUnit);
+                        resolve(fetchedBagItem);
+                    } else {
+                        resolve(null);
+                    }
+                }
+            })
+        })
+    }
+
+    /**
+     * 
+     * @param {number} id 
+     * @returns {Array<bagItem>}
+     */
+
+    async getBagItemListByBagItemId(id) {
+        let query = 'SELECT * FROM CART_ITEM WHERE bagItemId = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.all(query, [id], (err, rows) => {
+                if(err) {
+                    console.log('Error retriving bagItem List: ', err.message);
+                    reject(err);
+                } else {
+                    let bagItem_list = [];
+
+                    if (rows) {
+                    rows.forEach(row => {
+                        let id = parseInt(row.id, 10);
+                        let bagId = parseInt(row.bagId, 10);
+                        let name = row.name;
+                        let quantity = parseFloat(row.quantity);
+                        let measurementUnit = row.measurementUnit;
+
+                        let fetchedBagItem = new BagItem(id, bagId, name, quantity, measurementUnit);
+                        bagItem_list.push(fetchedBagItem);
+                    })
+                    resolve(bagItem_list)
+
+                    } else {
+                        resolve(null);
+                    }
+                }
+            })
+        })
+    }
+
+    /**
+     * 
+     * @param {number} id 
+     * @returns 
+     */
     async deleteItem(id) {
         let query = 'DELETE FROM BAG_ITEM WHERE id = ?';
         return new Promise((resolve, reject) => {

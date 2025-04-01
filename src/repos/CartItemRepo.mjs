@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 
-export class CartElementRepo {
+export class CartItemRepo {
 
     constructor() {
         this.pathDB = pathDbFromRepos;

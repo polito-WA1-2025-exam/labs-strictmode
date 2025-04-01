@@ -10,25 +10,20 @@ export class EstablishmentRepo {
     }
 
     /**
-     * @param {string} email 
-     * @param {string} password 
-     * @param {number} prefixPhoneNumber 
-     * @param {number} phoneNumber 
-     * @param {string} contactEmail 
-     * @param {string} name 
-     * @param {string} estType 
+     * @param {Establishment} establishment;
      */
 
-    async createEstablishment(email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType) {
+    async createEstablishment(establishment) {
         let query = 'INSERT INTO ESTABLISHMENT (email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType) VALUES (?, ?, ?, ?, ?, ?, ?)';
         return new Promise ((resolve, reject) => {
-            this.DB.run(query, [email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType], (err)=>{
+            this.DB.all(query, [establishment.email, establishment.password, establishment.prefixPhoneNumber, establishment.phoneNumber, establishment.contactEmail, establishment.name, establishment.estType], (err)=>{
                 if (err) {
                     console.error('Error inserting establishment: ', err.message);
                     reject(err);
                 } else {
-                    console.log('Establishment inserted successfully');
-                    resolve(null);
+                    console.log('Establishment inserted successfully with ID:', this.lastID);
+                    let fetchedEstablishment = this.getEstablishmentById(this.lastID);
+                    resolve(fetchedEstablishment);
                 }
             })
         })
@@ -36,20 +31,13 @@ export class EstablishmentRepo {
 
     /**
      * 
-     * @param {number} id 
-     * @param {string} email 
-     * @param {string} password 
-     * @param {number} prefixPhoneNumber 
-     * @param {number} phoneNumber 
-     * @param {string} contactEmail 
-     * @param {string} name 
-     * @param {string} estType  
+     * @param {Establishment} establishment 
      */
 
-    async updateEstablishment(id, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType) {
+    async updateEstablishment(establishment) {
         let query = 'UPDATE ESTABLISHMENT SET email = ?, password = ?, prefixPhoneNumber = ?, phoneNumber = ?, contactEmail = ?, name = ?, estType = ? WHERE id = ?'
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType, id], (err) => {
+            this.DB.run(query, [establishment.email, establishment.password, establishment.prefixPhoneNumber, establishment.phoneNumber, establishment.contactEmail, establishment.name, establishment.estType, establishment.id], (err) => {
                 if (err) {
                     console.error('Error updating bagItem: ', err.message);
                     reject(err);
@@ -63,10 +51,10 @@ export class EstablishmentRepo {
     
     /**
      * @param {number} id; 
-     * @returns {Establishment}
+     * @returns {Establishment} establishment
      */
 
-    async getEstablishment(id) {
+    async getEstablishmentById(id) {
         let query = 'SELECT * FROM ESTABLISHMENT WHERE id = ?'
         return new Promise((resolve, reject) => {
             this.DB.all(query, [id], (err, row) => {
@@ -75,7 +63,7 @@ export class EstablishmentRepo {
                     reject(err); 
                 } else {
                     if (row) {
-                        let id = row[0].id;
+                        let id = parseInt(row[0].id, 10);
                         let email = row[0].email;
                         let password = row[0].password;
                         let prefixPhoneNumber = parseInt(row[0].prefixPhoneNumber, 10);
@@ -83,11 +71,12 @@ export class EstablishmentRepo {
                         let contactEmail = row[0].contactEmail;
                         let name = row[0].name;
                         let estType = row[0].estType;
-                        let establishment = new Establishment(id, bags, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
+                        
+                        let fetchedEstablishment = new Establishment(id, bags, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
 
                         // get bags
                         
-                        resolve(establishment);
+                        resolve(fetchedEstablishment);
                     } else {
                         resolve(null);
                     }
@@ -114,17 +103,18 @@ export class EstablishmentRepo {
 
                     if (rows) {
                         rows.forEach(row => {
-                            let id = row[0].id;
-                        let email = row[0].email;
-                        let password = row[0].password;
-                        let prefixPhoneNumber = parseInt(row[0].prefixPhoneNumber, 10);
-                        let phoneNumber = parseInt(row[0].phoneNumber, 10);
-                        let contactEmail = row[0].contactEmail;
-                        let name = row[0].name;
-                        let estType = row[0].estType;
-                        let establishment = new Establishment(id, bags, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
+                            let id = parseInt(row[0].id, 10);
+                            let email = row[0].email;
+                            let password = row[0].password;
+                            let prefixPhoneNumber = parseInt(row[0].prefixPhoneNumber, 10);
+                            let phoneNumber = parseInt(row[0].phoneNumber, 10);
+                            let contactEmail = row[0].contactEmail;
+                            let name = row[0].name;
+                            let estType = row[0].estType;
+                            
+                            let fetchedEstablishment = new Establishment(id, bags, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
 
-                        establishment_list.push(establishment);
+                            establishment_list.push(fetchedEstablishment);
                         })
                         resolve(establishment_list)
                     } else {

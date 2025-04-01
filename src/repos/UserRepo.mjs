@@ -10,41 +10,31 @@ export class UserRepo {
     }
 
     /**
-     * @param {string} email
-     * @param {string} password
-     * @param {number} prefixPhoneNumber
-     * @param {number} phoneNumber
-     * @param {string} assignedName
-     * @param {string} familyName
+     * @param {User} user
      * @returns {User}
      */
-    async createUser(email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName) {
+    async createUser(user) {
         let query = 'INSERT INTO USER (email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName) VALUES (?, ?, ?, ?, ?, ?)';
         return new Promise ((resolve, reject) => {
-            this.DB.run(query, [email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName], (err) =>{
+            this.DB.all(query, [user.email, user.password, user.prefixPhoneNumber, user.phoneNumber, user.assignedName, user.familyName], (err) =>{
                 if (err) {
                     console.error('Error inserting user: ', err.message);
                     reject(err);
                 } else {
-                    console.log('User inserted successfully');
-                    resolve(null);
+                    console.log('User inserted successfully with ID:', this.lastID);
+                    let fetchedUser = this.getUserById(this.lastID);
+                    resolve(fetchedUser);
                 }
             });
         })
     }
     /**
-     * @param {number} id
-     * @param {string} email
-     * @param {string} password
-     * @param {number} prefixPhoneNumber
-     * @param {number} phoneNumber
-     * @param {string} assignedName
-     * @param {string} familyName
+     * @param {User} user 
      */
-    async updateUser(id, email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName) {
+    async updateUser(user) {
         let query = "UPDATE USER SET email = ?, password = ?, prefixPhoneNumber = ?, phoneNumber = ?, assignedName = ?, familyName = ? WHERE id = ?"
         return new Promise ((resolve, reject) => {
-            this.DB.run(query, [email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName, id], (err) => {
+            this.DB.run(query, [user.email, user.password, user.prefixPhoneNumber, user.phoneNumber, user.assignedName, user.familyName, user.id], (err) => {
                 if (err) {
                     console.error('Error updating user: ', err.message);
                     reject(err);
@@ -68,16 +58,16 @@ export class UserRepo {
                     reject(err);
                 } else {
                     if (row) {
-                        let id = row[0].id;
+                        let id = parseInt(row[0].id, 10);
                         let email = row[0].email;
                         let password = row[0].password;
-                        let prefixPhoneNumber = parseInt(row[0].password, 10);
+                        let prefixPhoneNumber = parseInt(row[0].prefixPhoneNumber, 10);
                         let phoneNumber = parseInt(row[0].phoneNumber, 10);
                         let assignedName = row[0].assignedName;
                         let familyName = row[0].familyName;
     
-                        let user = new User(id, email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName)
-                        resolve(user);
+                        let fetchedUser = new User(id, email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName)
+                        resolve(fetchedUser);
                     } else {
                         resolve(null);
                     }

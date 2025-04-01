@@ -85,8 +85,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         FOREIGN KEY (bagItemId) REFERENCES BAG_ITEM (id)
       )`, handleError);
 
-      // Create PURCHASE table
-      db.run(`CREATE TABLE IF NOT EXISTS PURCHASE (
+      // Create RESERVATION_CART_ITEMS table
+      db.run(`CREATE TABLE IF NOT EXISTS RESERVATION_CART_ITEMS (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         reservationId INTEGER,
         cartItemId INTEGER,
