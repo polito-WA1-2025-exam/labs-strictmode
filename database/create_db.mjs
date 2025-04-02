@@ -73,15 +73,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
         estType VARCHAR(20)
       )`, handleError);
 
-      // Create CART_ITEM table
-      db.run(`CREATE TABLE IF NOT EXISTS CART_ITEM (
+      // Create CART_SINGLE_ELEMENT table
+      db.run(`CREATE TABLE IF NOT EXISTS CART_SINGLE_ELEMENT (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        userId INTEGER,
-        bagId INTEGER, 
+        userId INTEGER, 
         bagItemId INTEGER,
         included_in_cart BOOLEAN,
+        addedAt DATE,
         FOREIGN KEY (userId) REFERENCES USER (id),
-        FOREIGN KEY (bagId) REFERENCES BAG (id),
         FOREIGN KEY (bagItemId) REFERENCES BAG_ITEM (id)
       )`, handleError);
 
@@ -89,10 +88,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
       db.run(`CREATE TABLE IF NOT EXISTS RESERVATION_CART_ITEMS (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         reservationId INTEGER,
-        cartItemId INTEGER,
-        addedAt DATE,
+        cartSEId INTEGER,
         FOREIGN KEY (reservationId) REFERENCES RESERVATION(id),
-        FOREIGN KEY (cartItemId) REFERENCES CART_ITEM(id)
+        FOREIGN KEY (cartSEId) REFERENCES CART_SINGLE_ELEMENT(id)
       )`, handleError);
 
       // Create RESERVATION table
