@@ -43,7 +43,7 @@ const BagRepoTesting = {
      * Creates a new empty bag.
      * @param {Bag} bagType - Type of the bag (e.g., "regular", "surprise").
      * @param {number} estId - The establishment ID associated with the bag.
-     * @param {string} size - "small", "medium", "large".
+     * @param {number} size - "small", "medium", "large".
      * @param {Array<string>} tags - Example: ["vegan", "gluten free"].
      * @param {number} price - The price of the bag.
      * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
@@ -353,18 +353,11 @@ const ReservationRepoTesting = {
 
         async createReservations(userId, cartItems) {
             let c = 0;
-            /*
             for (const cartItem of cartItems) {
                 const reservation = new Reservation(this.resId++, userId, cartItem);
                 this.reservations.push(reservation);
                 ++c;                      
             }
-            */
-
-            //create a whole reservation with all the cartItems
-            const reservation = new Reservation(this.resId++, userId, cartItems);
-            reservations.push(reservation);
-            ++c;
 
             return `Created ${c} reservations!`;
         },
@@ -478,7 +471,7 @@ const EstablishmentRepoTesting = {
 
 
 // repos: { bagRepo, userRepo, cartRepo, resRepo, estRepo }    
-function startServer(repos) {
+export function createServer(repos) {
     const server = express();
 
     /* MIDDLEWARES */
@@ -502,15 +495,15 @@ function startServer(repos) {
     server.use("/establishments", createEstablishmentsRouter(repos));
 
 
-    server.listen(PORT, () => {console.log(`Server started on http://localhost:${PORT}`);})
+    return server;
 }
 
-startServer({
-    bagRepo: BagRepoTesting,
-    userRepo: UserRepoTesting,
-    cartRepo: CartRepoTesting,
-    resRepo: ReservationRepoTesting,
-    estRepo: EstablishmentRepoTesting
-});
-
+// const server = createServer({
+//     bagRepo: BagRepoTesting,
+//     userRepo: UserRepoTesting,
+//     cartRepo: CartRepoTesting,
+//     resRepo: ReservationRepoTesting,
+//     estRepo: EstablishmentRepoTesting
+// });
+// server.listen(PORT, () => {console.log(`Server started on http://localhost:${PORT}`);})
 
