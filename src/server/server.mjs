@@ -353,11 +353,18 @@ const ReservationRepoTesting = {
 
         async createReservations(userId, cartItems) {
             let c = 0;
+            /*
             for (const cartItem of cartItems) {
                 const reservation = new Reservation(this.resId++, userId, cartItem);
                 this.reservations.push(reservation);
                 ++c;                      
             }
+            */
+
+            //create a whole reservation with all the cartItems
+            const reservation = new Reservation(this.resId++, userId, cartItems);
+            reservations.push(reservation);
+            ++c;
 
             return `Created ${c} reservations!`;
         },

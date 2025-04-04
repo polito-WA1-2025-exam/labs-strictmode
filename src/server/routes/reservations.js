@@ -5,11 +5,15 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
     const router = Router();
 
     router.get("/", async (req, res) => {
-        let res_ = await resRepo.getReservations();
-        if (!res_){
-            return res.status(404).json({ error: "Reservations not found!" });
+        try {
+            let res_ = await resRepo.getReservations();
+            if (!res_){
+                return res.status(404).json({ error: "Reservations not found!" });
+            }
+            return res.json(res_);
+        } catch (error) {
+            return res.status(500).json({ error: "Error: Server error!" });
         }
-        return res.json(res_);
     });
 
     // creation of new reservation for userid
@@ -37,7 +41,7 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
         //1. do all the checks
         //2. create a separate revservation for each bag
 
-        const successfulReservations = [];
+        const est = [];
 
         for (const cartItem of userCart.getCartItems()){
             //1. for each bag do all the checks
@@ -74,18 +78,48 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
             //set cartItem as reserved
             cartItem.bag.reservedBy = userId;
 
+
             /*
             In production use: ReservationRepo.createReservations(userId, cartItems) method
             */
 
             /*Here, just for testing purposes, we use: */
             //const reservation = new Reservation(null, user, cartItem);
-            const res_ = resRepo.createReservationSingle(userId, cartItem);
-            successfulReservations.push(res_);
+
+
+            //ISSUE: CHECK USER DOESN'T BUY >1 BAGS FROM TEH SAME ESTABLISHMENT
+            //HERE:
+            try {
+                const dateToday = dayjs().get('date');
+                const resCheckToday = await resRepo.getReservationsByDate(userId, cartItem.bag.estId, dateToday);
+
+                if (resCheckToday.length > 0){
+                    //Erro: user is not expected to reserve more than 1 bag from the same establishment on the same day
+                    return res.status(400).json({ error: `Error: You are not expected to reserve more than 1 bag from the same establishment on the same day` });
+                }
+            } catch (error){
+                //db error
+                return res.status(500).json({ error: "Error: Server error!" });
+            }
+
+
+            //IF ALL THE CHECKS ARE OK, THEN:
+            //update total price
+
+            //add the cartItem to the list of cartItems
+            //at then end: create a new reservation for the userId and all the cartItems
+            try {
+                const newReservation = new Reservation(null, user, cartItem);
+                const res_ = await resRepo.createReservation(newReservation);
+                return res.json(res_);
+            } catch (error) {
+                return res.status(500).json({ error: "Error: it's not possible to create the reservation!" });
+            }
+           
         }
 
-        //if no errors, return all the reservations made
-        return res.json(successfulReservations);
+
+
     });
 
     // delete a reservation by id
@@ -95,7 +129,23 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
             const res_ = await resRepo.cancelReservation(req.params.id);
             return res.json(res_);
         } catch (error) {
-            return res.status(400).json({ error: error.message });
+            return res.status(404).json({ error: "Error: Reservation not found!" });
+        }
+    });
+
+
+    //list reservations by userId
+    router.get("/user/:userId", async (req, res) => {
+        //try catch error
+        try {
+            const userId = parseInt(req.params.userId);
+            const res_ = await resRepo.listReservationsByUser(userId);
+            if (!res_){
+                return res.status(404).json({ error: "Reservations not found!" });
+            }
+            return res.json(res_);
+        } catch (error) {
+            return res.status(500).json({ error: "Error: Server error!" });
         }
     });
 
