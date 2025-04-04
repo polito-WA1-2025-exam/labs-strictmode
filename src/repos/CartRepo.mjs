@@ -15,17 +15,17 @@ export class CartRepo {
     
     /**
      * Add a bag to the user's cart.
-     * @param {User} user
-     * @param {Bag} bag
+     * @param {number} userId
+     * @param {number} bagId
      */
-    async addBag(user, bag) {
+    async addBag(userId, bagId) {
         let addedAt = new Date();
         let bagRepo = new BagRepo();
-        let bagItem_list = bagRepo.getItems(bag);
+        let bagItem_list = bagRepo.getItems(bagId);
         let cartSingleElementRepo = new CartSingleElementRepo();
 
         bagItem_list.forEach(bagItem => {
-            cartSingleElementRepo.createCartSingleElement(user, bagItem, addedAt);
+            cartSingleElementRepo.createCartSingleElement(userId, bagItem.Id, addedAt);
         })
     }
 

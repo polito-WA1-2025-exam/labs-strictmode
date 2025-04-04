@@ -6,7 +6,7 @@ export class Reservation {
         this.id = id;
         this.user = user;
         this.createdAt = dayjs().toDate();
-        this.cartItems = [];       // bag
+        this.cartItemList = [];       // bag
         this.canceledAt = null;
         this.totPrice = null;
     }

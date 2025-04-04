@@ -24,6 +24,9 @@ export class ReservationRepo {
                     reject(err);
                 } else {
                     console.log('Reservation inserted successfully with ID:', this.lastID);
+
+                    // TODO : ReservationCartItemsRepo > save all the items in DB 
+
                     let fetchedReservation = this.getReservationById(this.lasID);
                     resolve(fetchedReservation);
                 }
@@ -102,5 +105,7 @@ export class ReservationRepo {
      * Cancel a reservation, without deleting it.
      * @param {number} resId - The ID of the reservation to be cancelled.
      */
-    async cancelReservation(resId) {}
+    async cancelReservation(id) {
+        let query = 'DELETE RESERVATION WHERE id = ?';
+    }
 }

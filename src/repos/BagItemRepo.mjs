@@ -87,7 +87,7 @@ export class BagItemRepo {
      */
 
     async getBagItemListByBagItemId(id) {
-        let query = 'SELECT * FROM CART_ITEM WHERE bagItemId = ?';
+        let query = 'SELECT * FROM CART_SINGLE_ELEMENT WHERE bagItemId = ?';
         return new Promise((resolve, reject) => {
             this.DB.all(query, [id], (err, rows) => {
                 if(err) {

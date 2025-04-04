@@ -96,10 +96,10 @@ export class BagRepo {
      * @returns {Array<BagItem>}
      */
 
-    async getItems(bag) {
+    async getItems(id) {
         // TODO
         let bagItemRepo = new BagItemRepo();
-        bagItem_list = bagItemRepo.getBagItemListByBagItemId(bag.id);
+        bagItem_list = bagItemRepo.getBagItemListByBagItemId(id);
         return bagItem_list;
     }
 

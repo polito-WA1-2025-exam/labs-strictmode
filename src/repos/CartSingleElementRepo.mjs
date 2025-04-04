@@ -17,10 +17,10 @@ export class CartSingleElementRepo {
      * @param {Date} addedAt
      * @returns 
      */
-    async createCartSingleElement(user, bagItem, addedAt) {
-        let query = 'INSERT INTO CART_ELEMENT (userId, bagItemId, included_in_cart, addedAt) VALUES (?, ?, ?, ?)'
+    async createCartSingleElement(userId, bagItemId, addedAt) {
+        let query = 'INSERT INTO CART_SINGLE_ELEMENT (userId, bagItemId, included_in_cart, addedAt) VALUES (?, ?, ?, ?)'
         return new Promise ((resolve, reject) => {
-            this.DB.run(query, [user.id, bagItem.id, 1, addedAt], (err) => {
+            this.DB.run(query, [user.id, bagItem.id, 1, addedAt], (err) => { 
                 if (err) {
                     console.error('Error inserting cartSingleElement: ', err.message);
                     reject(err);
@@ -42,7 +42,7 @@ export class CartSingleElementRepo {
      * @returns 
      */
     async updateCartSingleElement(id, userId, bagId, bagItemId, included_in_cart) {
-        let query = 'UPDATE CART_ELEMENT SET userId = ?, bagId = ?, bagItemId = ?, included_in_cart = ? WHERE id = ?';
+        let query = 'UPDATE CART_SINGLE_ELEMENT SET userId = ?, bagId = ?, bagItemId = ?, included_in_cart = ? WHERE id = ?';
         return new Promise ((resolve, reject) => {
             this.DB.run(query, [userId, bagId, bagItemId, included_in_cart, id], (err) => {
                 if (err) {
@@ -64,7 +64,7 @@ export class CartSingleElementRepo {
      */
 
     async deleteCartSingleElement(user, bagItem) {
-        let query = 'DELETE FROM CART_SINGLE_ELEMENT WHERE userId = ? AND bagItem = ?'
+        let query = 'DELETE FROM CART_SINGLE_ELEMENT WHERE userId = ? AND bagItemId = ?'
         return new Promise ((resolve, reject) => {
             this.DB.run(query, [user.id, bagItem.id], (err) => {
                 if (err) {
@@ -77,6 +77,19 @@ export class CartSingleElementRepo {
             })
         })
     }
+
+    /**
+     * 
+     * @param {User} user 
+     * @param {BagItem} bagItem 
+     * @returns {Bool}
+     */
+
+    async checkIncludedOrRemoved(user, bagItem) {
+        let query = 'SELECT * FROM CART_SINGLE_ELEMENT WHERE userId = ? AND bagItemId = ? AND included_in_cart = 0';
+    }
+
+
 
 }
 

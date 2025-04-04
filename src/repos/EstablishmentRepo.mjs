@@ -15,9 +15,9 @@ export class EstablishmentRepo {
      */
 
     async createEstablishment(establishment) {
-        let query = 'INSERT INTO ESTABLISHMENT (email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        let query = 'INSERT INTO ESTABLISHMENT (name, estType, address) VALUES (?, ?, ?)';
         return new Promise ((resolve, reject) => {
-            this.DB.all(query, [establishment.email, establishment.password, establishment.prefixPhoneNumber, establishment.phoneNumber, establishment.contactEmail, establishment.name, establishment.estType], (err)=>{
+            this.DB.all(query, [establishment.name, establishment.estType, establishment.address], (err)=>{
                 if (err) {
                     console.error('Error inserting establishment: ', err.message);
                     reject(err);
@@ -38,9 +38,9 @@ export class EstablishmentRepo {
      */
 
     async updateEstablishment(establishment) {
-        let query = 'UPDATE ESTABLISHMENT SET email = ?, password = ?, prefixPhoneNumber = ?, phoneNumber = ?, contactEmail = ?, name = ?, estType = ? WHERE id = ?'
+        let query = 'UPDATE ESTABLISHMENT SET name = ?, estType = ? address = ?, WHERE id = ?'
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [establishment.email, establishment.password, establishment.prefixPhoneNumber, establishment.phoneNumber, establishment.contactEmail, establishment.name, establishment.estType, establishment.id], (err) => {
+            this.DB.run(query, [establishment.name, establishment.estType, establishment.id, establishment.address], (err) => {
                 if (err) {
                     console.error('Error updating bagItem: ', err.message);
                     reject(err);
@@ -67,15 +67,11 @@ export class EstablishmentRepo {
                 } else {
                     if (row) {
                         let id = parseInt(row[0].id, 10);
-                        let email = row[0].email;
-                        let password = row[0].password;
-                        let prefixPhoneNumber = parseInt(row[0].prefixPhoneNumber, 10);
-                        let phoneNumber = parseInt(row[0].phoneNumber, 10);
-                        let contactEmail = row[0].contactEmail;
                         let name = row[0].name;
                         let estType = row[0].estType;
+                        let address = row[0].address;
                         
-                        let fetchedEstablishment = new Establishment(id, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
+                        let fetchedEstablishment = new Establishment(id, name, estType, address);
                         bag_list = this.getBags(fetchedEstablishment);
                         fetchedEstablishment.bag_list = bag_list;
                         
@@ -119,15 +115,11 @@ export class EstablishmentRepo {
                     if (rows) {
                         rows.forEach(row => {
                             let id = parseInt(row[0].id, 10);
-                            let email = row[0].email;
-                            let password = row[0].password;
-                            let prefixPhoneNumber = parseInt(row[0].prefixPhoneNumber, 10);
-                            let phoneNumber = parseInt(row[0].phoneNumber, 10);
-                            let contactEmail = row[0].contactEmail;
                             let name = row[0].name;
                             let estType = row[0].estType;
+                            let address = row[0].address;
 
-                            let fetchedEstablishment = new Establishment(id, email, password, prefixPhoneNumber, phoneNumber, contactEmail, name, estType);
+                            let fetchedEstablishment = new Establishment(id, name, estType, address);
                             bag_list = this.getBags(fetchedEstablishment);
                             fetchedEstablishment.bag_list = bag_list;
 
