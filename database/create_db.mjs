@@ -84,12 +84,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // Create RESERVATION table
       db.run(`CREATE TABLE IF NOT EXISTS RESERVATION (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        userId INTEGER,
+        cartItemId INTEGER,
         createdAt DATE,
         canceledAt DATE NULL,
-        totPrice REAL,
-        FOREIGN KEY (userId) REFERENCES USER(id)
+        FOREIGN KEY (cartItemId) REFERENCES CART_ITEM(id)
       )`, handleError);
 
       // Create index to improve performance

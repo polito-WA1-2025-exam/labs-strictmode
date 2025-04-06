@@ -2,13 +2,11 @@ import dayjs from 'dayjs';
 import Bag from './Bag.mjs';
 
 export class Reservation {
-    constructor(id, user) {
-        this.id = id;
+    constructor(cartItem, user) {
+        this.cartItem = cartItem;
         this.user = user;
         this.createdAt = dayjs().toDate();
-        this.cartItemList = [];       // bag
         this.canceledAt = null;
-        this.totPrice = null;
     }
 }
 

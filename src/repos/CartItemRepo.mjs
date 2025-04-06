@@ -71,6 +71,56 @@ export class CartItemRepo {
     }
 
     /**
+     * 
+     * @param {number} id  
+     * @returns 
+     */
+
+    async getCartItemById(id) {
+        let query = 'SELECT * FROM CART_ITEM WHERE id = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.run(query, [id], (err, row) => {
+                if (err) {
+                    console.error('Error retriving cartItem: ', err.message);
+                    reject(err);
+                } else {
+                    if (row) {
+                        let id = parseInt(row[0].id, 10);
+                        let bagId = parseInt(row[0].bagId, 10);
+                        let userId = parseInt(row[0].userId, 10);
+
+                        let fetchedCartItem = new CartItem(id, bagId, null);
+                        let removedRepo = new RemovedRepo();
+                        let bagItemRemoved_list = removedRepo.getAllBagItemRemoved(userId);
+                        fetchedCartItem.removedItems = bagItemRemoved_list;
+                        resolve(fetchedCartItem);
+                    } else {
+                        resolve (null);
+                    }
+                }
+            })
+        })
+    }
+    async getUserIdByCartItemId(id) {
+        let query = 'SELECT userId FROM CART_ITEM WHERE id = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.all(query, [id], (err, row) => {
+                if (err) {
+                    console.error('Error retriving userId: ', err.message);
+                    reject(err);
+                } else {
+                    if (row) {
+                        let userId = row[0].userId; 
+                        resolve(userId);
+                    } else {
+                        resolve(null);
+                    }
+                }
+            })
+        })
+    }
+
+    /**
      * @param {number} id
      * @returns
      */
@@ -96,7 +146,7 @@ export class CartItemRepo {
      * @returns {Array<CartItem>} cartItem_list
      */
 
-    async getCartItemList(userId) {
+    async getCartItemListByUserId(userId) {
         let query = 'SELECT * FROM CART_ITEM WHERE userId = ?';
         return new Promise((resolve, reject) => {
             this.DB.all(query, [userId], (err, rows) => {
@@ -122,5 +172,7 @@ export class CartItemRepo {
             })
         })
     }
+
+
 
 }

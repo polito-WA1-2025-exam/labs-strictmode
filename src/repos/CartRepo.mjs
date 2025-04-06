@@ -42,7 +42,7 @@ export class CartRepo {
      */
     async getCart(userId) {
         let cartItemRepo = new CartItemRepo();
-        let cartItem_list = cartItemRepo.getCartItemList(userId);
+        let cartItem_list = cartItemRepo.getCartItemListByUserId(userId);
 
         let cart = new Cart(userId);
         cart.items = cartItem_list;
