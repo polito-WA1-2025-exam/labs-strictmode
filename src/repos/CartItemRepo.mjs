@@ -101,6 +101,16 @@ export class CartItemRepo {
             })
         })
     }
+
+    // Used in getReservationByCartItemId() in 'ReservationRepo' for retriving 'userId' given 'CartItemId' from the table CART_ITEM.
+    // It's for knowing which user added that bag in his cart. 
+
+    /**
+     * 
+     * @param {number} id 
+     * @return {number} userId
+     */
+
     async getUserIdByCartItemId(id) {
         let query = 'SELECT userId FROM CART_ITEM WHERE id = ?';
         return new Promise((resolve, reject) => {
@@ -110,7 +120,7 @@ export class CartItemRepo {
                     reject(err);
                 } else {
                     if (row) {
-                        let userId = row[0].userId; 
+                        let userId = parseInt(row[0].userId, 10); 
                         resolve(userId);
                     } else {
                         resolve(null);
@@ -136,6 +146,7 @@ export class CartItemRepo {
                     console.log('cartItem deleting succesfully');
                     let removedRepo = new RemovedRepo();
                     removedRepo.deleteBagItemRemoved(id);
+                    resolve(null);
                 }
             })
         })
@@ -154,7 +165,7 @@ export class CartItemRepo {
                     console.error('Error retriving all cartItems: ', err.message);
                     reject(err);
                 } else {
-                    if (err) {
+                    if (rows) {
 
                         cartItem_list = [];
 
