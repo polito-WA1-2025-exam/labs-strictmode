@@ -26,6 +26,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     db.serialize(() => {
       db.run('BEGIN TRANSACTION');
 
+      // USER: Each record is a user already registered into the platform.
       // Create USER table
       db.run(`CREATE TABLE IF NOT EXISTS USER (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,6 +36,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         familyName VARCHAR(20)
       )`, handleError);
 
+      // ESTABLISHMENT: Each record is an establishment that offers 0 or N bags to users.
       // Create ESTABLISHMENT table
       db.run(`CREATE TABLE IF NOT EXISTS ESTABLISHMENT (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +44,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         estType VARCHAR(20)
       )`, handleError);
 
+      // BAG: Each record is a bag that contains multiple elements inside (bagItem).
+      // Each bag can be modified by the user by removing a maximum of 2 bagItem from the bag.
       // Create BAG table
       db.run(`CREATE TABLE IF NOT EXISTS BAG (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,6 +60,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         FOREIGN KEY (estId) REFERENCES ESTABLISHMENT(id)
       )`, handleError);
 
+      // BAG_ITEM: Each record is an element of a Bag.
       // Create BAG_ITEM table
       db.run(`CREATE TABLE IF NOT EXISTS BAG_ITEM (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,6 +71,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         FOREIGN KEY (bagId) REFERENCES BAG(id)
       )`, handleError);
 
+      // CART_ITEM: Each cart item is a bag that the user added to his cart.
+      // This table is required because multiple users can add the same bag into the cart.
       // Create CART_ITEM table
       db.run(`CREATE TABLE IF NOT EXISTS CART_ITEM (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +82,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         FOREIGN KEY (userId) REFERENCES USER (id)
         )`, handleError);
 
+      // REMOVED: Each record is a bagItem removed from a cartItem.
+      // 2 cartItems of 2 different users might be the same bag with different bagItems removed.
       // Create REMOVED table
       db.run(`CREATE TABLE IF NOT EXISTS REMOVED (
         bagItemId INTEGER,
@@ -82,6 +91,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         PRIMARY KEY (bagItemId, cartItemId)
         )`, handleError);
 
+      // RESERVATION: Each record is a reservation of just 1 cartItem.
+      // Since for each cartItem ordered there is only 1 reservation, the reservation has cartItemId as a PRIMARY KEY.
       // Create RESERVATION table
       db.run(`CREATE TABLE IF NOT EXISTS RESERVATION (
         cartItemId INTEGER,
