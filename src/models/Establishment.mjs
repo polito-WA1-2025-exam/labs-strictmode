@@ -1,10 +1,11 @@
 export class Establishment {
-    constructor(id, name, estType) {
+    constructor(id, name, bags, estType, address) {
         this.id = id;
         this.name = name;
-        this.bag_list = [];
+        this.bags = bags;
         this.estType = estType;
-        this.address = this.address
+        this.address = address;
+
     }
 }
 

@@ -25,6 +25,14 @@ export class BagRepo {
                     reject(err);
                 } else {
                     console.log('Bag inserted successfully with ID:', this.lastID);
+                    
+                    // creating all the bagItems records in the DB
+                    let bagItemRepo = new BagItemRepo();
+                    bag.items.forEach(bagItem => {
+                        bagItemRepo.createBagItem(bagItem);
+                    })
+
+                    // fetch all the data of the bag
                     let fetchedBag = this.getBagById(this.lastID);
                     bagItem_list = this.getItems(fetchedBag);
                     fetchedBag.items = bagItem_list;
@@ -62,7 +70,7 @@ export class BagRepo {
     async getBagById(id) {
         let query = 'SELECT * FROM BAG WHERE id = ?'
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [resolve, reject], (err, row) => {
+            this.DB.all(query, [id], (err, row) => {
                 if (err) {
                     console.error('Error inserting bag: ', err.message);
                     reject(err);
@@ -78,7 +86,7 @@ export class BagRepo {
                         pickupTimeEnd = row[0].pickupTimeEnd;
                         let available = Boolean(row[0].available);
 
-                        let fetchedBag = new Bag(id, estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available);
+                        let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
                         bagItem_list = this.getItems(fetchedBag);
                         fetchedBag.items = bagItem_list;
                         resolve(fetchedBag);
@@ -126,7 +134,7 @@ export class BagRepo {
                             let pickupTimeEnd = row.pickupTimeEnd
                             let available = Boolean(row.available)
 
-                            let fetchedBag = new Bag(id, estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available);
+                            let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
                             bagItem_list = this.getItems(fetchedBag);
                             fetchedBag.items = bagItem_list;
 
@@ -170,7 +178,8 @@ export class BagRepo {
                             let pickupTimeEnd = row.pickupTimeEnd;
                             let available = Boolean(row.available);
     
-                            let fetchedBag = new Bag(id, estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available);
+                            
+                            let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
                             bagItem_list = this.getItems(fetchedBag);
                             fetchedBag.items = bagItem_list;
 

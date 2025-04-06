@@ -25,7 +25,7 @@ export class EstablishmentRepo {
                     console.log('Establishment inserted successfully with ID:', this.lastID);
                     let fetchedEstablishment = this.getEstablishmentById(this.lastID);
                     bag_list = this.getBags(fetchedEstablishment);
-                    fetchedEstablishment.bag_list = bag_list;
+                    fetchedEstablishment.bags = bag_list;
                     resolve(fetchedEstablishment);
                 }
             })
@@ -71,14 +71,35 @@ export class EstablishmentRepo {
                         let estType = row[0].estType;
                         let address = row[0].address;
                         
-                        let fetchedEstablishment = new Establishment(id, name, estType, address);
+                        let fetchedEstablishment = new Establishment(id, name, null, estType, address);
                         bag_list = this.getBags(fetchedEstablishment);
-                        fetchedEstablishment.bag_list = bag_list;
+                        fetchedEstablishment.bags = bag_list;
                         
                         resolve(fetchedEstablishment);
                     } else {
                         resolve(null);
                     }
+                }
+            })
+        })
+    }
+
+    /**
+     * 
+     * @param {number} id 
+     * @returns 
+     */
+
+    async deleteEstablishment(id) {
+        let query = 'DELETE FROM ESTABLISHMENT WHERE id = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.run(query, [id], (err) => {
+                if (err) {
+                    console.error('Error deleting establishment: ', err.message);
+                    reject(err);
+                } else {
+                    console.log('Establishment deleted succesfully: ', err.message);
+                    resolve(null);
                 }
             })
         })
@@ -119,9 +140,9 @@ export class EstablishmentRepo {
                             let estType = row[0].estType;
                             let address = row[0].address;
 
-                            let fetchedEstablishment = new Establishment(id, name, estType, address);
+                            let fetchedEstablishment = new Establishment(id, name, null, estType, address);
                             bag_list = this.getBags(fetchedEstablishment);
-                            fetchedEstablishment.bag_list = bag_list;
+                            fetchedEstablishment.bags = bag_list;
 
                             establishment_list.push(fetchedEstablishment);
                         })

@@ -6,7 +6,6 @@ export class Cart {
     constructor(userId) {
         this.userId = userId;
         this.items = [];
-        this.totPrice = 0;
     }
 
     /**
@@ -27,7 +26,6 @@ export class Cart {
 
 
         this.items.push(cartItem);
-        this.totPrice += cartItem.bag.price;
         return cartItem;
     }
 }

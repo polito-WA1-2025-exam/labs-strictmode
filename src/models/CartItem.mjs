@@ -14,7 +14,8 @@ export class CartItem {
      * @param {Object} bag - The bag object containing items.
      * @param {Array<string>} [removedItems=[]] - An array of item IDs to be removed from the bag.
      */
-    constructor(bag, removedItems = []) {
+    constructor(id, bag, removedItems = []) {
+        this.id = id;
         this.bag = bag;
 
         this.removedItems = [];

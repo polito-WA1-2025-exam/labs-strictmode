@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import Cart from '../models/index.mjs'
-import { BagRepo, CartSingleElementRepo } from './index.mjs';
+import { BagRepo, CartItemRepo } from './index.mjs';
 
 /**
  * Class representing a repository for managing a shopping cart.
@@ -15,32 +15,24 @@ export class CartRepo {
     
     /**
      * Add a bag to the user's cart.
+     * @param {CartItem} cartItem
      * @param {number} userId
-     * @param {number} bagId
+     * @param {CartItem} cartItem;
      */
-    async addBag(userId, bagId) {
-        let addedAt = new Date();
-        let bagRepo = new BagRepo();
-        let bagItem_list = bagRepo.getItems(bagId);
-        let cartSingleElementRepo = new CartSingleElementRepo();
-
-        bagItem_list.forEach(bagItem => {
-            cartSingleElementRepo.createCartSingleElement(userId, bagItem.Id, addedAt);
-        })
+    async addBag(cartItem, userId) {
+        let cartItemRepo = new CartItemRepo();
+        let cartItem = cartItemRepo.createCartItem(cartItem, userId);
+        return cartItem;
     }
 
     /**
      * Remove a bag from the user's cart.
-     * @param {User} user
-     * @param {Bag} bag
+     * @param {CartItem} cartItem
+     * @returns
      */
-    async removeBag(user, bag) {
-        let bagItem_list = bag.getItems(bag);
-        let cartSingleElementRepo = new CartSingleElementRepo();
-
-        bagItem_list.forEach(bagItem => {
-            cartSingleElementRepo.deleteCartSingleElement(user, bagItem);
-        })
+    async removeBag(cartItem) {
+        let cartItemRepo = new CartItemRepo();
+        cartItemRepo.deleteCartItem(cartItem.id);
     }
 
     /**
@@ -48,7 +40,15 @@ export class CartRepo {
      * @param {number} userId
      * @returns {Cart}
      */
-    async getCart(userId) {}
+    async getCart(userId) {
+        let cartItemRepo = new CartItemRepo();
+        let cartItem_list = cartItemRepo.getCartItemList(userId);
+
+        let cart = new Cart(userId);
+        cart.items = cartItem_list;
+
+        return cart;
+    }
 
     /**
      * Updates the set of removed items for a bag in the user's cart.

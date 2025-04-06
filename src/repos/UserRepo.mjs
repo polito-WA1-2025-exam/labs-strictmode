@@ -14,9 +14,9 @@ export class UserRepo {
      * @returns {User}
      */
     async createUser(user) {
-        let query = 'INSERT INTO USER (email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName) VALUES (?, ?, ?, ?, ?, ?)';
+        let query = 'INSERT INTO USER (email, password, assignedName, familyName) VALUES (?, ?, ?, ?)';
         return new Promise ((resolve, reject) => {
-            this.DB.all(query, [user.email, user.password, user.prefixPhoneNumber, user.phoneNumber, user.assignedName, user.familyName], (err) =>{
+            this.DB.all(query, [user.email, user.password, user.assignedName, user.familyName], (err) =>{
                 if (err) {
                     console.error('Error inserting user: ', err.message);
                     reject(err);
@@ -32,9 +32,9 @@ export class UserRepo {
      * @param {User} user 
      */
     async updateUser(user) {
-        let query = "UPDATE USER SET email = ?, password = ?, prefixPhoneNumber = ?, phoneNumber = ?, assignedName = ?, familyName = ? WHERE id = ?"
+        let query = "UPDATE USER SET email = ?, password = ?, assignedName = ?, familyName = ? WHERE id = ?"
         return new Promise ((resolve, reject) => {
-            this.DB.run(query, [user.email, user.password, user.prefixPhoneNumber, user.phoneNumber, user.assignedName, user.familyName, user.id], (err) => {
+            this.DB.run(query, [user.email, user.password, user.assignedName, user.familyName, user.id], (err) => {
                 if (err) {
                     console.error('Error updating user: ', err.message);
                     reject(err);
@@ -61,12 +61,10 @@ export class UserRepo {
                         let id = parseInt(row[0].id, 10);
                         let email = row[0].email;
                         let password = row[0].password;
-                        let prefixPhoneNumber = parseInt(row[0].prefixPhoneNumber, 10);
-                        let phoneNumber = parseInt(row[0].phoneNumber, 10);
                         let assignedName = row[0].assignedName;
                         let familyName = row[0].familyName;
     
-                        let fetchedUser = new User(id, email, password, prefixPhoneNumber, phoneNumber, assignedName, familyName)
+                        let fetchedUser = new User(id, email, password, assignedName, familyName);
                         resolve(fetchedUser);
                     } else {
                         resolve(null);

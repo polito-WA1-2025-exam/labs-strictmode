@@ -7,7 +7,7 @@ export class BagItem {
      * @param {string} measurementUnit - Unit of measurement for the quantity (e.g., "kg", "g", "units").
      * @param {boolean} removed
      */
-    constructor(id, bagId, name, quantity, measurementUnit, removed=false) {
+    constructor(id, bagId, name, quantity, measurementUnit) {
         this.id = id;
         this.bagId = bagId;
         this.name = name;

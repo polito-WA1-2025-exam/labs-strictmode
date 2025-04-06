@@ -31,10 +31,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email VARCHAR(20),
         password VARCHAR(20),
-        prefixPhoneNumber INTEGER,
-        phoneNumber INTEGER,
         assignedName VARCHAR(20),
         familyName VARCHAR(20)
+      )`, handleError);
+
+      // Create ESTABLISHMENT table
+      db.run(`CREATE TABLE IF NOT EXISTS ESTABLISHMENT (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name VARCHAR(20),
+        estType VARCHAR(20)
       )`, handleError);
 
       // Create BAG table
@@ -61,37 +66,21 @@ const db = new sqlite3.Database(dbPath, (err) => {
         FOREIGN KEY (bagId) REFERENCES BAG(id)
       )`, handleError);
 
-      // Create ESTABLISHMENT table
-      db.run(`CREATE TABLE IF NOT EXISTS ESTABLISHMENT (
+      // Create CART_ITEM table
+      db.run(`CREATE TABLE IF NOT EXISTS CART_ITEM (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email VARCHAR(20),
-        password VARCHAR(20),
-        prefixPhoneNumber INTEGER,
-        phoneNumber INTEGER,
-        contactEmail VARCHAR(20),
-        name VARCHAR(20),
-        estType VARCHAR(20)
-      )`, handleError);
+        bagId INTEGER,
+        userId INTEGER,
+        FOREIGN KEY (bagId) REFERENCES BAG (id),
+        FOREIGN KEY (userId) REFERENCES USER (id)
+        )`, handleError);
 
-      // Create CART_SINGLE_ELEMENT table
-      db.run(`CREATE TABLE IF NOT EXISTS CART_SINGLE_ELEMENT (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        userId INTEGER, 
+      // Create REMOVED table
+      db.run(`CREATE TABLE IF NOT EXISTS REMOVED (
         bagItemId INTEGER,
-        included_in_cart BOOLEAN,
-        addedAt DATE,
-        FOREIGN KEY (userId) REFERENCES USER (id),
-        FOREIGN KEY (bagItemId) REFERENCES BAG_ITEM (id)
-      )`, handleError);
-
-      // Create RESERVATION_CART_ITEMS table
-      db.run(`CREATE TABLE IF NOT EXISTS RESERVATION_CART_ITEMS (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        reservationId INTEGER,
-        cartSEId INTEGER,
-        FOREIGN KEY (reservationId) REFERENCES RESERVATION(id),
-        FOREIGN KEY (cartSEId) REFERENCES CART_SINGLE_ELEMENT(id)
-      )`, handleError);
+        cartItemId INTEGER,
+        PRIMARY KEY (bagItemId, cartItemId)
+        )`, handleError);
 
       // Create RESERVATION table
       db.run(`CREATE TABLE IF NOT EXISTS RESERVATION (
@@ -105,25 +94,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // Create index to improve performance
       db.run(`CREATE INDEX IF NOT EXISTS idx_bag_item_bagid ON BAG_ITEM(bagId)`, handleError);
-
-      // Create trigger to automatically update 'available' to 0 if current time > pickupTimeEnd
-      db.run(`CREATE TRIGGER IF NOT EXISTS update_available_status
-          AFTER INSERT ON BAG
-          FOR EACH ROW
-          WHEN strftime('%s', CURRENT_TIMESTAMP) > strftime('%s', NEW.pickupTimeEnd)
-          BEGIN
-              UPDATE BAG SET available = 0 WHERE id = NEW.id;
-          END;`, handleError);
-
-      // Another trigger for AFTER UPDATE if pickupTimeEnd is updated
-      db.run(`CREATE TRIGGER IF NOT EXISTS update_available_status_on_update
-          AFTER UPDATE ON BAG
-          FOR EACH ROW
-          WHEN strftime('%s', CURRENT_TIMESTAMP) > strftime('%s', NEW.pickupTimeEnd)
-          AND NEW.available != 0
-          BEGIN
-              UPDATE BAG SET available = 0 WHERE id = NEW.id;
-          END;`, handleError);
 
       // Commit the transaction
       db.run('COMMIT', (err) => {

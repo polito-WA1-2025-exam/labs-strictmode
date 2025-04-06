@@ -86,6 +86,20 @@ export class ReservationRepo {
         })
     }
 
+    async getReservationByDate(userId, estId, createdAt) {
+        let query = 'SELECT * FROM RESERVATION WHERE userId = ? AND estId = ? AND createdAt = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.all(query, [userId, estId, createdAt], (err, rows) => {
+                if(err) {
+                    console.log("Error retriving reservation: ", err.message);
+                    reject(err);
+                } else {
+                    if (rows)
+                }
+            })
+        })
+    }
+
     /**
      * Returns ALL the reservations made by a user, even the cancelled ones.
      * @param {number} userId
