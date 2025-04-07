@@ -8,7 +8,7 @@ export function createUsersRouter({ userRepo }) {
     
     // create a new user
     router.post("/", async (req, res) => {
-        const { email, assignedName, familyName, password, prefixPhoneNumber, phoneNumber } = req.body;
+        const { email, assignedName, familyName, password } = req.body;
 
         //verify email is valid
         if (!isValidEmail(email)) {
@@ -29,7 +29,7 @@ export function createUsersRouter({ userRepo }) {
 
 
         //create new user object
-        const newUser = new User(null, email, assignedName, familyName, password, prefixPhoneNumber, phoneNumber);
+        const newUser = new User(null, email, assignedName, familyName, password);
         try {
             const res_ = await userRepo.createUser(newUser);
             return res.json(newUser);
@@ -42,7 +42,7 @@ export function createUsersRouter({ userRepo }) {
     router.put("/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);
-        const { email, assignedName, familyName, password, prefixPhoneNumber, phoneNumber } = req.body;
+        const { email, assignedName, familyName, password} = req.body;
 
         //verify email is valid
         if (!isValidEmail(email)) {
@@ -63,9 +63,17 @@ export function createUsersRouter({ userRepo }) {
         //aggiungi altre verifiche
         
         try {
-            const existentUser = new User(id, email, assignedName, familyName, password, prefixPhoneNumber, phoneNumber);
+            const existentUser = new User(id, email, assignedName, familyName, password);
             const updatedUser = await userRepo.updateUser(existentUser);
+            if (!updatedUser){
+                //if user is null -> updated was succesfull
+                return res.status(200).json({ success: "User updated successfully!"});
+            } 
+
+            //if user is not null -> updated was not succesfull
+            return res.status(500).json({ error: "Error: it's not possible to update the user!" });
         } catch (error) {
+            //if error -> db error
             return res.status(500).json({ error: "Error: it's not possible to update the user!" });
         }
     });
@@ -74,11 +82,21 @@ export function createUsersRouter({ userRepo }) {
     router.get("/:id", async (req, res) => {
         //convert id to number
         const id = parseInt(req.params.id);
-        const user = await userRepo.getUserById(id);
-        if (!user) {
-            return res.status(404).json({ error: "Error: user not found!"});
+
+        try {
+            const user = await userRepo.getUserById(id);
+            if (!user) {
+                //if user is null -> user not found
+                return res.status(404).json({ error: "Error: user not found!"});
+            }
+
+            //if user is not null -> user found
+            return res.status(200).json(user);
+        } catch (error) {
+
+            //if error -> db error
+            return res.status(500).json({ error: "Error: it's not possible to get the user!" });
         }
-        return res.json(user);
     });
 
     // delete a user by id
