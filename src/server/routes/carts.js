@@ -1,5 +1,6 @@
 import express from "express";
-import {User, Bag} from "../models/Bag.mjs";
+import {User, Bag} from "../models/index.mjs";
+import HttpStatusCodes from "../HttpStatusCodes.mjs";
 
 
 
@@ -14,17 +15,22 @@ export function createCartsRouter({ cartRepo, userRepo }) {
 
         try{
             const cart = await cartRepo.getCart(userId);
-            //check if cart exists
-            if (!cart) {
-                return res.status(404).json({ error: `Cart for user ${userId} not found!` });
+
+            //a cart object is always returned by the db repo, so it cannot be null
+            //however, if the cart is empty, its attribute cart.items will be an empty array
+            if (cart.items.length === 0) {
+                return res.status(HttpStatusCodes.NOT_FOUND).json({ error: `Cart for user ${userId} is empty!` });
             }
-            return res.json(cart);
+
+            //if the cart is not empty, return it
+            return res.status(HttpStatusCodes.OK).json(cart);
         } catch (error) {
-            return res.status(500).json({ error: "Error: Server error!" });
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: Server error!" });
         }
     });
 
     //add bag, so a cartItem, to cart by userid
+    //++ DA AGGIORNARE DB REPO ++
     router.post("/:userId/bags", async (req, res) => {
         const userId = parseInt(req.params.userId);
         const { bagId } = req.body;
@@ -38,6 +44,7 @@ export function createCartsRouter({ cartRepo, userRepo }) {
     });
 
     //remove bag, so a cartItem, from cart by userid
+    //++ DA AGGIORNARE DB REPO ++
     router.delete("/:userId/bags/:bagId", async (req, res) => {
         const userId = parseInt(req.params.userId);
         const bagId = parseInt(req.params.bagId);
