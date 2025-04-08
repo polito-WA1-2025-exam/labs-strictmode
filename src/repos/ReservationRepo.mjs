@@ -1,8 +1,9 @@
 import sqlite3 from 'sqlite3';
+import dayjs from 'dayjs';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import Reservation, { CartItem } from '../models/index.mjs'
 import { UserRepo } from './UserRepo.mjs';
-import { CartItemRepo } from './index.mjs';
+import { BagRepo, CartItemRepo } from './index.mjs';
 
 export class ReservationRepo {
 
@@ -26,6 +27,7 @@ export class ReservationRepo {
                     reject(err);
                 } else {
                     console.log("Reservation inserted succesfully");
+                    this.setAvailableAttributesForBags(reservation.cartItem.id, 0);
                     resolve(reservation);
                 }
             })
@@ -48,8 +50,8 @@ export class ReservationRepo {
                 } else {
                     if (row) {
                         let cartItemId = parseInt(row[0].cartItemId, 10);
-                        let createdAt = row[0].createdAt;
-                        let canceledAt = row[0].canceledAt;
+                        let createdAt = dayjs(row[0].createdAt, 'YYYY-MM-DD');
+                        let canceledAt = dayjs(row[0].canceledAt, 'YYYY-MM-DD');
 
                         let cartItemRepo = new CartItemRepo();
                         let userRepo = new UserRepo();
@@ -66,6 +68,26 @@ export class ReservationRepo {
             })
         })
     }
+
+    /**
+     * 
+     * @param {number} cartItemId ;
+     * @returns
+     */
+
+    async setAvailableAttributesForBags(cartItemId, available) {
+        let cartItemRepo = new CartItemRepo();
+        let bagRepo = new BagRepo();
+        bagId_list = cartItemRepo.getBagIdListFromCartItemId(cartItemId);
+
+        bagId_list.forEach(bagId => {
+            bagId = parseInt(bagId, 10);
+            bagRepo.setAvailable(bagId, available);
+        })
+
+        return;
+    }
+
 
     async getReservationByDate(userId, estId, createdAt) {
         
@@ -118,6 +140,7 @@ export class ReservationRepo {
                     reject(err);
                 } else {
                     console.log('Reservation canceled succesfully');
+                    this.setAvailableAttributesForBags(reservation.cartItem.id, 1);
                     resolve(null);
                 }
             })

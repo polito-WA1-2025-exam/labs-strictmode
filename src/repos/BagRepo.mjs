@@ -1,4 +1,5 @@
 import sqlite3 from 'sqlite3';
+import dayjs from 'dayjs';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import Bag from '../models/index.mjs'
 import BagItem from '../models/index.mjs';
@@ -82,8 +83,8 @@ export class BagRepo {
                         let bagType = row[0].bagType;
                         let tags = row[0].tags;
                         let price = parseFloat(row[0].price);
-                        pickupTimeStart = row[0].pickupTimeStart;
-                        pickupTimeEnd = row[0].pickupTimeEnd;
+                        pickupTimeStart = dayjs(row[0].pickupTimeStart, 'YYYY-MM-DD');
+                        pickupTimeEnd = dayjs(row[0].pickupTimeEnd, 'YYYY-MM-DD');
                         let available = Boolean(row[0].available);
 
                         let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
@@ -130,9 +131,9 @@ export class BagRepo {
                             let bagType = row.bagType;
                             let tags = row.tags;
                             let price = parseFloat(row.price);
-                            let pickupTimeStart = row.pickupTimeStart
-                            let pickupTimeEnd = row.pickupTimeEnd
-                            let available = Boolean(row.available)
+                            let pickupTimeStart = dayjs(row.pickupTimeStart, 'YYYY-MM-DD');
+                            let pickupTimeEnd = dayjs(row.pickupTimeEnd, 'YYYY-MM-DD');
+                            let available = Boolean(row.available);
 
                             let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
                             bagItem_list = this.getItems(fetchedBag);
@@ -151,13 +152,32 @@ export class BagRepo {
     }
 
     /**
+     * @param {number} id
+     */
+    
+    async setAvailable(id, available) {
+        let query = 'UPDATE BAG SET available = ? WHERE id = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.run(query, [available, id], (err) => {
+                if (err) {
+                    console.error('Error setting available for the bag: ', err.message);
+                    reject(err);
+                } else {
+                    console.log('available for the bag succesfully set');
+                    resolve(null);
+                }
+            })
+        })
+    }
+
+    /**
      * Lists all the available bags, from every establishment.
      * A bag is available if no one reserved it yet and it can be picked up now.
      * 
      * @returns {Array<Bag>}
      */
     async listAvailable() {
-        let query = 'SELECT * FROM BAG WHERE available = 1'
+        let query = "SELECT * FROM BAG WHERE available = 1 AND DATE('now') > DATE(pickupTimeEnd)";
         return new Promise((resolve, reject) => {
             this.DB.all(query, [resolve, reject], (err, rows) => {
                 if (err) {
@@ -174,16 +194,19 @@ export class BagRepo {
                             let bagType = row.bagType;
                             let tags = row.tags;
                             let price = parseFloat(row.price);
-                            let pickupTimeStart = row.pickupTimeStart;
-                            let pickupTimeEnd = row.pickupTimeEnd;
+                            let pickupTimeStart = dayjs(row.pickupTimeStart, 'YYYY-MM-DD');
+                            let pickupTimeEnd = dayjs(row.pickupTimeEnd, 'YYYY-MM-DD');
                             let available = Boolean(row.available);
     
+                            const currentDate = dayjs();
+                            if (currentDate.isBefore(pickupTimeEnd)) {
                             
-                            let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
-                            bagItem_list = this.getItems(fetchedBag);
-                            fetchedBag.items = bagItem_list;
+                                let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
+                                bagItem_list = this.getItems(fetchedBag);
+                                fetchedBag.items = bagItem_list;
 
-                            bag_list.push(fetchedBag);
+                                bag_list.push(fetchedBag);
+                            }
                         })
                         resolve(bag_list);
                     } else {
@@ -209,11 +232,11 @@ export class BagRepo {
 
     /**
      * Remove and deletes the item in the bag.
-     * @param {BagItem} bagItem
+     * @param {BagItemId} bagItemId
      */
-    async removeItem(bagItem) {
+    async removeItem(bagItemId) {
         let bagItemRepo = new BagItemRepo();
-        let msg = bagItemRepo.deleteItem(bagItem.id);
+        let msg = bagItemRepo.deleteItem(bagItemId);
     }
 
 }

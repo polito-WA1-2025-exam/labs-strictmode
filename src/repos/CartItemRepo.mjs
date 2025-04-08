@@ -1,4 +1,5 @@
 import sqlite3 from 'sqlite3';
+import dayjs from 'dayjs';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import CartItem from '../models/CartItem.mjs';
 import { BagRepo } from './BagRepo.mjs';
@@ -184,6 +185,27 @@ export class CartItemRepo {
         })
     }
 
+    /**
+     * @param {number} cartItemId
+     * @returns
+     */
 
+    async getBagIdListFromCartItemId(cartItemId) {
+        let query = 'SELECT bagId FROM CART_ITEM WHERE cartItemId = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.all(query, [cartItemId], (err, rows) => {
+                if (err) {
+                    console.error('Error retriving bagId List: ', err.message);
+                    reject(err);
+                } else {
+                    if (rows) {
+                        resolve(rows);  // rows is a list where each element is a bagId;
+                    } else {
+                        resolve(null);
+                    }
+                }
+            })
+        })
+    }
 
 }

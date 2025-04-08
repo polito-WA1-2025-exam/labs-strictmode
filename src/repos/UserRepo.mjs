@@ -1,4 +1,5 @@
 import sqlite3 from 'sqlite3';
+import dayjs from 'dayjs';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import User from '../models/index.mjs';
 
@@ -45,6 +46,22 @@ export class UserRepo {
             })
         })
     }
+
+    async deleteUser(id) {
+        let query = 'DELETE FROM USER WHERE id = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.run(query, [id], (err) => {
+                if (err) {
+                    console.err('Error deleting user: ', err.message);
+                    reject(err);
+                } else {
+                    console.err('User delete succesfully');
+                    resolve(null);
+                }
+            })
+        })
+    }
+
     /**
      * @param {number} id
      * @returns {User}

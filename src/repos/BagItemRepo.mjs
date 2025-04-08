@@ -1,4 +1,5 @@
 import sqlite3 from 'sqlite3';
+import dayjs from 'dayjs';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import BagItem from '../models/index.mjs'
 
@@ -21,7 +22,7 @@ export class BagItemRepo {
             this.DB.all(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit], function (err) {
                 if (err) {
                     console.error('Error inserting bagItem:', err.message);
-                    reject(null);
+                    reject(err);
                 } else {
                     console.log('BagItem inserted successfully with ID:', this.lastID);
                     let fetchedBagItem = this.getBagItemById(this.lastID);
