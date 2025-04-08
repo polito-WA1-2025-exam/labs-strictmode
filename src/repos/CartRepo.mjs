@@ -22,7 +22,7 @@ export class CartRepo {
      */
     async addBag(cartItem, userId) {
         let cartItemRepo = new CartItemRepo();
-        let cartItem = cartItemRepo.createCartItem(cartItem, userId);
+        let cartItem = await cartItemRepo.createCartItem(cartItem, userId);
         return cartItem;
     }
 
@@ -33,7 +33,7 @@ export class CartRepo {
      */
     async removeBag(cartItem) {
         let cartItemRepo = new CartItemRepo();
-        cartItemRepo.deleteCartItem(cartItem.id);
+        await cartItemRepo.deleteCartItem(cartItem.id);
     }
 
     /**
@@ -43,7 +43,7 @@ export class CartRepo {
      */
     async getCart(userId) {
         let cartItemRepo = new CartItemRepo();
-        let cartItem_list = cartItemRepo.getCartItemListByUserId(userId);
+        let cartItem_list = await cartItemRepo.getCartItemListByUserId(userId);
 
         let cart = new Cart(userId);
         cart.items = cartItem_list;
