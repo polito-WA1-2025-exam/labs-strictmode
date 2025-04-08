@@ -19,13 +19,13 @@ export class BagItemRepo {
     async createBagItem(bagItem) {
         let query = 'INSERT INTO BAG_ITEM (bagId, name, quantity, measurementUnit) VALUES (?, ?, ?, ?)';
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit], function (err) {
+            this.DB.all(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit], async (err) => {
                 if (err) {
                     console.error('Error inserting bagItem:', err.message);
                     reject(err);
                 } else {
                     console.log('BagItem inserted successfully with ID:', this.lastID);
-                    let fetchedBagItem = this.getBagItemById(this.lastID);
+                    let fetchedBagItem = await this.getBagItemById(this.lastID);
                     resolve(fetchedBagItem);
                 }
             });

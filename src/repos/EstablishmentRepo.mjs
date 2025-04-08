@@ -18,14 +18,14 @@ export class EstablishmentRepo {
     async createEstablishment(establishment) {
         let query = 'INSERT INTO ESTABLISHMENT (name, estType, address) VALUES (?, ?, ?)';
         return new Promise ((resolve, reject) => {
-            this.DB.all(query, [establishment.name, establishment.estType, establishment.address], (err)=>{
+            this.DB.all(query, [establishment.name, establishment.estType, establishment.address], async (err)=>{
                 if (err) {
                     console.error('Error inserting establishment: ', err.message);
                     reject(err);
                 } else {
                     console.log('Establishment inserted successfully with ID:', this.lastID);
-                    let fetchedEstablishment = this.getEstablishmentById(this.lastID);
-                    bag_list = this.getBags(fetchedEstablishment);
+                    let fetchedEstablishment = await this.getEstablishmentById(this.lastID);
+                    bag_list = await this.getBags(fetchedEstablishment);
                     fetchedEstablishment.bags = bag_list;
                     resolve(fetchedEstablishment);
                 }
@@ -61,7 +61,7 @@ export class EstablishmentRepo {
     async getEstablishmentById(id) {
         let query = 'SELECT * FROM ESTABLISHMENT WHERE id = ?'
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [id], (err, row) => {
+            this.DB.all(query, [id], async (err, row) => {
                 if (err) {
                     console.error('Error retrieving establishment: ', err.message);
                     reject(err); 
@@ -73,7 +73,7 @@ export class EstablishmentRepo {
                         let address = row[0].address;
                         
                         let fetchedEstablishment = new Establishment(id, name, null, estType, address);
-                        bag_list = this.getBags(fetchedEstablishment);
+                        bag_list = await this.getBags(fetchedEstablishment);
                         fetchedEstablishment.bags = bag_list;
                         
                         resolve(fetchedEstablishment);
@@ -114,7 +114,7 @@ export class EstablishmentRepo {
 
     async getBags(establishment) {
         let bagRepo = new BagRepo();
-        bag_list = bagRepo.getBagListByEstId(establishment.id);
+        bag_list = await bagRepo.getBagListByEstId(establishment.id);
         return bag_list;
     }
 
@@ -135,14 +135,14 @@ export class EstablishmentRepo {
                     let establishment_list = []
 
                     if (rows) {
-                        rows.forEach(row => {
+                        rows.forEach(async row => {
                             let id = parseInt(row[0].id, 10);
                             let name = row[0].name;
                             let estType = row[0].estType;
                             let address = row[0].address;
 
                             let fetchedEstablishment = new Establishment(id, name, null, estType, address);
-                            bag_list = this.getBags(fetchedEstablishment);
+                            bag_list = await this.getBags(fetchedEstablishment);
                             fetchedEstablishment.bags = bag_list;
 
                             establishment_list.push(fetchedEstablishment);

@@ -20,7 +20,7 @@ export class BagRepo {
     async createBag(bag) {
         let query = 'INSERT INTO BAG (estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [bag.estId, bag.size, bag.bagType, bag.tags, bag.price, bag.pickupTimeStart, bag.pickupTimeEnd, bag.available], (err) => {
+            this.DB.all(query, [bag.estId, bag.size, bag.bagType, bag.tags, bag.price, bag.pickupTimeStart, bag.pickupTimeEnd, bag.available], async (err) => {
                 if (err) {
                     console.error('Error inserting bag: ', err.message);
                     reject(err);
@@ -29,13 +29,13 @@ export class BagRepo {
                     
                     // creating all the bagItems records in the DB
                     let bagItemRepo = new BagItemRepo();
-                    bag.items.forEach(bagItem => {
-                        bagItemRepo.createBagItem(bagItem);
+                    bag.items.forEach(async bagItem => {
+                        await bagItemRepo.createBagItem(bagItem);
                     })
 
                     // fetch all the data of the bag
-                    let fetchedBag = this.getBagById(this.lastID);
-                    bagItem_list = this.getItems(fetchedBag);
+                    let fetchedBag = await this.getBagById(this.lastID);
+                    bagItem_list = await this.getItems(fetchedBag);
                     fetchedBag.items = bagItem_list;
                     resolve(fetchedBag);
                 }
@@ -71,7 +71,7 @@ export class BagRepo {
     async getBagById(id) {
         let query = 'SELECT * FROM BAG WHERE id = ?'
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [id], (err, row) => {
+            this.DB.all(query, [id], async (err, row) => {
                 if (err) {
                     console.error('Error inserting bag: ', err.message);
                     reject(err);
@@ -88,7 +88,7 @@ export class BagRepo {
                         let available = Boolean(row[0].available);
 
                         let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
-                        bagItem_list = this.getItems(fetchedBag);
+                        bagItem_list = await this.getItems(fetchedBag);
                         fetchedBag.items = bagItem_list;
                         resolve(fetchedBag);
                     } else {
@@ -106,9 +106,8 @@ export class BagRepo {
      */
 
     async getItems(id) {
-        // TODO
         let bagItemRepo = new BagItemRepo();
-        bagItem_list = bagItemRepo.getBagItemListByBagItemId(id);
+        bagItem_list = await bagItemRepo.getBagItemListByBagItemId(id);
         return bagItem_list;
     }
 
@@ -124,7 +123,7 @@ export class BagRepo {
                     if (rows) {
                         let bag_list = [];
 
-                        rows.forEach(row => {
+                        rows.forEach( async row => {
                             let id = parseInt(row.id, 10);
                             let estId = parseInt(row.estId, 10);
                             let size = row.size;
@@ -136,7 +135,7 @@ export class BagRepo {
                             let available = Boolean(row.available);
 
                             let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
-                            bagItem_list = this.getItems(fetchedBag);
+                            bagItem_list = await this.getItems(fetchedBag);
                             fetchedBag.items = bagItem_list;
 
                             bag_list.push(fetchedBag);
@@ -187,7 +186,7 @@ export class BagRepo {
                     let bag_list = [];
 
                     if (rows) {
-                        rows.forEach(row => {
+                        rows.forEach(async row => {
                             let id = parseInt(row.id, 10);
                             let estId = parseInt(row.estId, 10);
                             let size = row.size;
@@ -202,7 +201,7 @@ export class BagRepo {
                             if (currentDate.isBefore(pickupTimeEnd)) {
                             
                                 let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
-                                bagItem_list = this.getItems(fetchedBag);
+                                bagItem_list = await this.getItems(fetchedBag);
                                 fetchedBag.items = bagItem_list;
 
                                 bag_list.push(fetchedBag);
@@ -225,7 +224,7 @@ export class BagRepo {
      */
     async addItem(bagItem) {
         let bagItemRepo = new BagItemRepo();
-        let bagItem = bagItemRepo.createBagItem(bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit);
+        let bagItem = await bagItemRepo.createBagItem(bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit);
 
         return bagItem;
     }
@@ -236,7 +235,9 @@ export class BagRepo {
      */
     async removeItem(bagItemId) {
         let bagItemRepo = new BagItemRepo();
-        let msg = bagItemRepo.deleteItem(bagItemId);
+        let msg = await bagItemRepo.deleteItem(bagItemId);
+
+        return;
     }
 
 }

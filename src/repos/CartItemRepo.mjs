@@ -32,8 +32,8 @@ export class CartItemRepo {
                     cartItem.id = this.lastID;
                     let removedRepo = new RemovedRepo();
                     
-                    cartItem.removedItems.forEach(bagItem => {
-                        removedRepo.createRemoved(bagItem.id, cartItem.id);
+                    cartItem.removedItems.forEach(async bagItem => {
+                        await removedRepo.createRemoved(bagItem.id, cartItem.id);
                     })
                     resolve(cartItem);
                 }
@@ -48,7 +48,7 @@ export class CartItemRepo {
     async getCartItem(bag, user) {
         let query = 'SELECT * FROM CART_ITEM WHERE bagId = ? AND userId = ?';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [bag.id, user.id], (err, row) => {
+            this.DB.run(query, [bag.id, user.id], async (err, row) => {
                 if (err) {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
@@ -60,7 +60,7 @@ export class CartItemRepo {
 
                         let fetchedCartItem = new CartItem(id, bagId, null);
                         let removedRepo = new RemovedRepo();
-                        let bagItemRemoved_list = removedRepo.getAllBagItemRemoved(userId);
+                        let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
                     } else {
@@ -80,7 +80,7 @@ export class CartItemRepo {
     async getCartItemById(id) {
         let query = 'SELECT * FROM CART_ITEM WHERE id = ?';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [id], (err, row) => {
+            this.DB.run(query, [id], async (err, row) => {
                 if (err) {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
@@ -92,7 +92,7 @@ export class CartItemRepo {
 
                         let fetchedCartItem = new CartItem(id, bagId, null);
                         let removedRepo = new RemovedRepo();
-                        let bagItemRemoved_list = removedRepo.getAllBagItemRemoved(userId);
+                        let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
                     } else {
@@ -139,14 +139,14 @@ export class CartItemRepo {
     async deleteCartItem(id) {
         let query = 'DELETE FROM CART_ITEM WHERE id = ?';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [id], (err) => {
+            this.DB.run(query, [id], async (err) => {
                 if (err) {
                     console.error('Error deleting cartItem: ', err.message);
                     reject(err);
                 } else {
                     console.log('cartItem deleting succesfully');
                     let removedRepo = new RemovedRepo();
-                    removedRepo.deleteBagItemRemoved(id);
+                    await removedRepo.deleteBagItemRemoved(id);
                     resolve(null);
                 }
             })
@@ -170,9 +170,9 @@ export class CartItemRepo {
 
                         cartItem_list = [];
 
-                        rows.forEach(row => {
+                        rows.forEach(async row => {
                             let bagId = row.bagId;
-                            let cartItem = this.getCartItem(bagId, userId);
+                            let cartItem = await this.getCartItem(bagId, userId);
                             cartItem_list.push(cartItem);
                         })
                         resolve(cartItem_list);

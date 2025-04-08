@@ -42,14 +42,14 @@ export class RemovedRepo {
     async getBagItemRemoved(bagItemId, cartItemId) {
         let query = 'SELECT * FROM REMOVED WHERE bagItemId = ? AND cartItemId = ?';
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [bagItemId, cartItemId], (err, row) => {
+            this.DB.all(query, [bagItemId, cartItemId], async (err, row) => {
                 if (err) {
                     console.error('Error retriving the remove Itemd: ', err.message);
                     reject(err);
                 } else {
                     if (row) {
                         let bagItemRepo = new bagItemRepo();
-                        let bagItemRemoved = bagItemRepo.getItemById(bagItemId);
+                        let bagItemRemoved = await bagItemRepo.getItemById(bagItemId);
                         resolve(bagItemRemoved);
                     } else {
                         resolve(null);
@@ -98,9 +98,9 @@ export class RemovedRepo {
                         bagItemRemoved_list = [];
                         let bagItemRepo = new BagItemRepo(); 
 
-                        rows.forEach(row => {
+                        rows.forEach(async row => {
                             let bagItemId = parseInt(row.bagItemId, 10);
-                            let bagItemRemoved = bagItemRepo.getBagItemById(bagItemId);
+                            let bagItemRemoved = await bagItemRepo.getBagItemById(bagItemId);
                             bagItemRemoved_list.push(bagItemRemoved);
                         })
                         resolve(bagItemRemoved_list);

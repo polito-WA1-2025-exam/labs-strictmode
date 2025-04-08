@@ -21,13 +21,13 @@ export class ReservationRepo {
     async createReservation(reservation) {
         let query = 'INSERT INTO RESERVATION (cartItemId, createdAt, canceledAt) VALUES (?, ?, ?, ?)';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [reservation.cartItem.id, reservation.createdAt, reservation.canceledAt], (err) => {
+            this.DB.run(query, [reservation.cartItem.id, reservation.createdAt, reservation.canceledAt], async (err) => {
                 if (err) {
                     console.err("Error creating reservation: ", err.message);
                     reject(err);
                 } else {
                     console.log("Reservation inserted succesfully");
-                    this.setAvailableAttributesForBags(reservation.cartItem.id, 0);
+                    await this.setAvailableAttributesForBags(reservation.cartItem.id, 0);
                     resolve(reservation);
                 }
             })
@@ -43,7 +43,7 @@ export class ReservationRepo {
     async getReservationByCartItemId(cartItemId) {
         let query = 'SELECT * FROM RESERVATION WHERE cartItemId = ?';
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [cartItemId], (err, row) => {
+            this.DB.all(query, [cartItemId], async (err, row) => {
                 if (err) {
                     console.error('Error retriving reservation: ', err.message);
                     reject(null);
@@ -55,9 +55,9 @@ export class ReservationRepo {
 
                         let cartItemRepo = new CartItemRepo();
                         let userRepo = new UserRepo();
-                        let cartItem = cartItemRepo.getCartItemById(cartItemId);
-                        let userId = cartItemRepo.getUserIdByCartItemId(cartItemId);
-                        let user = userRepo.getUserById(userId); 
+                        let cartItem = await cartItemRepo.getCartItemById(cartItemId);
+                        let userId = await cartItemRepo.getUserIdByCartItemId(cartItemId);
+                        let user = await userRepo.getUserById(userId); 
                         let fetchedReservation = new Reservation(cartItem, user, createdAt, canceledAt);
 
                         resolve(fetchedReservation);
@@ -78,11 +78,11 @@ export class ReservationRepo {
     async setAvailableAttributesForBags(cartItemId, available) {
         let cartItemRepo = new CartItemRepo();
         let bagRepo = new BagRepo();
-        bagId_list = cartItemRepo.getBagIdListFromCartItemId(cartItemId);
+        bagId_list = await cartItemRepo.getBagIdListFromCartItemId(cartItemId);
 
-        bagId_list.forEach(bagId => {
+        bagId_list.forEach(async bagId => {
             bagId = parseInt(bagId, 10);
-            bagRepo.setAvailable(bagId, available);
+            await bagRepo.setAvailable(bagId, available);
         })
 
         return;
@@ -100,11 +100,11 @@ export class ReservationRepo {
      */
     async listReservationsByUser(userId) {
         let cartItemRepo = new CartItemRepo();
-        let cartItem_list = cartItemRepo.getCartItemListByUserId(userId);
+        let cartItem_list = await cartItemRepo.getCartItemListByUserId(userId);
 
         reservation_list = []
-        cartItem_list.forEach(cartItem => {
-            let reservation = this.getReservationByCartItemId(cartItem.id);
+        cartItem_list.forEach(async cartItem => {
+            let reservation = await this.getReservationByCartItemId(cartItem.id);
             reservation_list.push(reservation);
         })
         return(reservation_list);
@@ -117,11 +117,11 @@ export class ReservationRepo {
      */
     async listReservationsByEstablishment(estId) {
         let cartItemRepo = new CartItemRepo();
-        let cartItem_list = cartItemRepo.getCartItemListByEstId(estId);
+        let cartItem_list = await cartItemRepo.getCartItemListByEstId(estId);
 
         reservation_list = []
-        cartItem_list.forEach(cartItem => {
-            let reservation = this.getReservationByCartItemId(cartItem.id);
+        cartItem_list.forEach(async cartItem => {
+            let reservation = await this.getReservationByCartItemId(cartItem.id);
             reservation_list.push(reservation);
         })
         return(reservation_list);
@@ -134,13 +134,13 @@ export class ReservationRepo {
     async cancelReservation(reservation) {
         let query = 'UPDATE RESERVATION SET canceledAt = ? WHERE cartItemId = ?';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [reservation.canceledAt, reservation.cartItem.id], (err) => {
+            this.DB.run(query, [reservation.canceledAt, reservation.cartItem.id], async (err) => {
                 if (err) {
                     console.err('Error updating canceledAt in Reservation: ', err.message);
                     reject(err);
                 } else {
                     console.log('Reservation canceled succesfully');
-                    this.setAvailableAttributesForBags(reservation.cartItem.id, 1);
+                    await this.setAvailableAttributesForBags(reservation.cartItem.id, 1);
                     resolve(null);
                 }
             })
