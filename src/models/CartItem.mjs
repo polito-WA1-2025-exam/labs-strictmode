@@ -16,7 +16,8 @@ export class CartItem {
      * @param {Object} bag - The bag object containing items.
      * @param {Array<string>} [removedItems=[]] - An array of item IDs to be removed from the bag.
      */
-    constructor(bag, removedItems = []) {
+    constructor(id, bag, removedItems = []) {
+        this.id = id;
         this.bag = bag;
 
         this.removedItems = [];
@@ -39,7 +40,7 @@ export class CartItem {
     removeItem(itemId) {
         if (this.bag.bagType !== Bag.TYPE_REGULAR || this.removedItems.length >= 2)
             throw new Error('Cannot remove more items');
-        if (this.bag.items.some(item => item.itemId === itemId)) return;
+        if (this.bag.items.some(item => item.itemId === itemId)) return;        // check if present in bag
 
         this.removedItems = [...new Set([...this.removedItems, itemId])];
     }
