@@ -25,6 +25,7 @@ export default function Home() {
               <Nav.Link href="#browse">Browse Food</Nav.Link>
               <Nav.Link href="#about">About Us</Nav.Link>
               <Nav.Link href="#contact">Contact</Nav.Link>
+              <Nav.Link href="/cart">Cart</Nav.Link> {/* Aggiunto collegamento al carrello */}
               <Button variant="success" className="ms-2">Sign In</Button>
               <Button variant="outline-success" className="ms-2">Register</Button>
             </Nav>
