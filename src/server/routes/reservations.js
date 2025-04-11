@@ -20,7 +20,12 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
     router.post("/", async (req, res) => {
         const { userId} = req.body;
 
-        const user = await userRepo.getUserById(userId);
+        const userId_ = parseInt(userId);
+        if (isNaN(userId_)){
+            return res.status(400).json({ error: "Error: userId is not a number!" });
+        }
+
+        const user = await userRepo.getUserById(userId_);
         if (!user) {
             return res.status(400).json({ error: "User not found" });
         }
@@ -126,7 +131,11 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
     router.delete("/:id", async (req, res) => {
         //try catch error
         try {
-            const res_ = await resRepo.cancelReservation(req.params.id);
+            const reservationId = parseInt(req.params.id);
+            if (isNaN(reservationId)){
+                return res.status(400).json({ error: "Error: reservationId is not a number!" });
+            }
+            const res_ = await resRepo.cancelReservation(reservationId);
             return res.json(res_);
         } catch (error) {
             return res.status(404).json({ error: "Error: Reservation not found!" });
@@ -139,6 +148,9 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
         //try catch error
         try {
             const userId = parseInt(req.params.userId);
+            if (isNaN(userId)){
+                return res.status(400).json({ error: "Error: userId is not a number!" });
+            }
             const res_ = await resRepo.listReservationsByUser(userId);
             if (!res_){
                 return res.status(404).json({ error: "Reservations not found!" });

@@ -33,9 +33,16 @@ export function createCartsRouter({ cartRepo, userRepo }) {
     //++ DA AGGIORNARE DB REPO ++
     router.post("/:userId/bags", async (req, res) => {
         const userId = parseInt(req.params.userId);
+        if (isNaN(userId)){
+            return res.status(400).json({ error: "Error: userId is not a number!" });
+        }
         const { bagId } = req.body;
+        const bagId_ = parseInt(bagId);
+        if (isNaN(bagId_)){
+            return res.status(400).json({ error: "Error: bagId is not a number!" });
+        }
         try{
-            const result = await cartRepo.addBag(userId, parseInt(bagId));
+            const result = await cartRepo.addBag(userId, bagId_);
             
         } catch (error) {
             return res.status(500).json({ error: "Error: cannot create a new bag!" });
@@ -48,6 +55,15 @@ export function createCartsRouter({ cartRepo, userRepo }) {
     router.delete("/:userId/bags/:bagId", async (req, res) => {
         const userId = parseInt(req.params.userId);
         const bagId = parseInt(req.params.bagId);
+
+        if (isNaN(userId)){
+            return res.status(400).json({ error: "Error: userId is not a number!" });
+        }
+
+        if (isNaN(bagId)){
+            return res.status(400).json({ error: "Error: bagId is not a number!" });
+        }
+
         //catch the eventually thrown error
         try {
             const result = await cartRepo.removeBag(userId, bagId);
@@ -55,6 +71,49 @@ export function createCartsRouter({ cartRepo, userRepo }) {
         } catch (error) {
             return res.status(404).json({ error: "Error: cannot delete bag!" });
         }
+    });
+
+
+    router.post("/:userId/personalize/:bagId", async (req, res) => {
+        const userId = parseInt(req.params.userId);
+        const bagId = parseInt(req.params.bagId);
+
+        if (isNaN(userId)){
+            return res.status(400).json({ error: "Error: userId is not a number!" });
+        }
+
+        if (isNaN(bagId)){
+            return res.status(400).json({ error: "Error: bagId is not a number!" });
+        }
+
+
+        const removedItems = req.body.removedItems;
+        //removedItems is an array of bagItem ids to be removed
+        if (!Array.isArray(removedItems)) {
+            return res.status(400).json({ error: "Error: removedItems is not an array!" });
+        }
+
+        if (removedItems.length === 0) {
+            return res.status(400).json({ error: "Error: removedItems is an empty array!" });
+        }
+
+
+        try {
+        
+            const res = await cartRepo.personalizeBag(userId, bagId, removedItems);
+
+            if (!res){
+                //if res is null -> bag personalized successfully
+                return res.status(HttpStatusCodes.OK).json({ success: "Bag personalized successfully!" });
+            } 
+
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: cannot personalize bag!" });
+        } catch (error){
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: cannot personalize bag!" });
+        }
+
+
+
     });
 
     return router;
