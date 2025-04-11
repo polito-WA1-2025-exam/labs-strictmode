@@ -43,7 +43,7 @@ export class EstablishmentRepo {
         return new Promise((resolve, reject) => {
             this.DB.run(query, [establishment.name, establishment.estType, establishment.id, establishment.address], (err) => {
                 if (err) {
-                    console.error('Error updating bagItem: ', err.message);
+                    console.error('Error updating establishment: ', err.message);
                     reject(err);
                 } else {
                     console.log('BagItem updated successfully');

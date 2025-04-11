@@ -71,6 +71,32 @@ export class CartItemRepo {
         })
     }
 
+    async getCartItemByBagIdUserID(bagId, userId) {
+        let query = 'SELECT * FROM CART_ITEM WHERE bagId = ? AND userId = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.run(query, [bagId, userId], async (err, row) => {
+                if (err) {
+                    console.error('Error retriving cartItem: ', err.message);
+                    reject(err);
+                } else {
+                    if (row) {
+                        let id = parseInt(row[0].id, 10);
+                        let bagId = parseInt(row[0].bagId, 10);
+                        let userId = parseInt(row[0].userId, 10);
+
+                        let fetchedCartItem = new CartItem(id, bagId, null);
+                        let removedRepo = new RemovedRepo();
+                        let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
+                        fetchedCartItem.removedItems = bagItemRemoved_list;
+                        resolve(fetchedCartItem);
+                    } else {
+                        resolve (null);
+                    }
+                }
+            })
+        })
+    }
+
     /**
      * 
      * @param {number} id  

@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3';
 import dayjs from 'dayjs';
 import {pathDbFromRepos, connect} from '../../database/index.js';
 import Cart from '../models/index.mjs'
-import { BagRepo, CartItemRepo } from './index.mjs';
+import { BagRepo, CartItemRepo, RemovedRepo } from './index.mjs';
 
 /**
  * Class representing a repository for managing a shopping cart.
@@ -16,13 +16,14 @@ export class CartRepo {
     
     /**
      * Add a bag to the user's cart.
-     * @param {CartItem} cartItem
-     * @param {number} userId
+     * @param {UserId} userId
+     * @param {bagId} bagId
      * @param {CartItem} cartItem;
      */
-    async addBag(cartItem, userId) {
+    async addBag(userId, bagId) {
         let cartItemRepo = new CartItemRepo();
-        let cartItem = await cartItemRepo.createCartItem(cartItem, userId);
+        let cartItem = new CartItem(bagId, userId, []);
+        cartItem = await cartItemRepo.createCartItem(cartItem, userId);
         return cartItem;
     }
 
@@ -31,7 +32,7 @@ export class CartRepo {
      * @param {CartItem} cartItem
      * @returns
      */
-    async removeBag(cartItem) {
+    async removeBag(userId, bagId) {
         let cartItemRepo = new CartItemRepo();
         await cartItemRepo.deleteCartItem(cartItem.id);
     }
@@ -60,5 +61,14 @@ export class CartRepo {
 
     // removedItems -> it might be saved as a string in the DB. THe string contains IDs of bag Items 
 
-    async personalizeBag(userId, bagId, removedItems) {}
+    async personalizeBag(userId, bagId, removedItems) {
+        let cartItemRepo = new CartItemRepo();
+        let cartItem = cartItemRepo.getCartItemByBagIdUserID(bagId, userId);
+
+        let removedRepo = new RemovedRepo();
+        removedItems.forEach(bagItemId => {
+            removedRepo.createRemoved(bagItemId, cartItem.id);
+        })
+
+    }
 }
