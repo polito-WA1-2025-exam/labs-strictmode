@@ -16,8 +16,8 @@ export class UserRepo {
      */
     async createUser(user) {
         let query = 'INSERT INTO USER (email, password, assignedName, familyName) VALUES (?, ?, ?, ?)';
-        return new Promise (function (resolve, reject) {
-            this.DB.all(query, [user.email, user.password, user.assignedName, user.familyName], async (err) =>{
+        return new Promise ((resolve, reject) => {
+            this.DB.all(query, [user.email, user.password, user.assignedName, user.familyName], async function (err) {
                 if (err) {
                     console.error('Error inserting user: ', err.message);
                     reject(err);

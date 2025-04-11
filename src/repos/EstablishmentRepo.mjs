@@ -18,7 +18,7 @@ export class EstablishmentRepo {
     async createEstablishment(establishment) {
         let query = 'INSERT INTO ESTABLISHMENT (name, estType, address) VALUES (?, ?, ?)';
         return new Promise ((resolve, reject) => {
-            this.DB.all(query, [establishment.name, establishment.estType, establishment.address], async (err)=>{
+            this.DB.all(query, [establishment.name, establishment.estType, establishment.address], async function (err){
                 if (err) {
                     console.error('Error inserting establishment: ', err.message);
                     reject(err);

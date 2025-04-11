@@ -19,7 +19,7 @@ export class BagItemRepo {
     async createBagItem(bagItem) {
         let query = 'INSERT INTO BAG_ITEM (bagId, name, quantity, measurementUnit) VALUES (?, ?, ?, ?)';
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit], async (err) => {
+            this.DB.all(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit], async function (err) {
                 if (err) {
                     console.error('Error inserting bagItem:', err.message);
                     reject(err);

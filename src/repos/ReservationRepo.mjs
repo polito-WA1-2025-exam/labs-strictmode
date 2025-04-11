@@ -21,7 +21,7 @@ export class ReservationRepo {
     async createReservation(reservation) {
         let query = 'INSERT INTO RESERVATION (cartItemId, createdAt, canceledAt) VALUES (?, ?, ?, ?)';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [reservation.cartItem.id, reservation.createdAt, reservation.canceledAt], async (err) => {
+            this.DB.run(query, [reservation.cartItem.id, reservation.createdAt, reservation.canceledAt], async function (err) {
                 if (err) {
                     console.err("Error creating reservation: ", err.message);
                     reject(err);

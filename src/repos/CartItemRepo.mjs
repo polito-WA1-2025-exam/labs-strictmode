@@ -23,7 +23,7 @@ export class CartItemRepo {
     async createCartItem(cartItem, user) {
         let query = 'INSERT INTO CART_ITEM (bagId, userId) VALUES (?, ?)';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [cartItem.bag.id, user.id], (err) => {
+            this.DB.run(query, [cartItem.bag.id, user.id], function (err) {
                 if (err) {
                     console.error('Error creating cartItem: ', err.message);
                     reject(err);
