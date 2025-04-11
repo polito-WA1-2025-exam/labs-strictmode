@@ -11,13 +11,15 @@ export class User {
      * @param {int} phoneNumber
      * @param {string} assignedName
      * @param {string} familyName
+     * @param {string} password
      */
-    constructor(id, email, password, assignedName, familyName) {
+    constructor(id, email, assignedName, familyName, password) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.assignedName = assignedName;
         this.familyName = familyName;
+        this.password = password;
     }
 }
 

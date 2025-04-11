@@ -6,6 +6,8 @@ import dayjs from 'dayjs';
  * A special request can be "no peanuts" or "no animal products (vegan)", for example.
  * Multiple CartItems can contain the same bag, but with different user personalizations.
  */
+
+
 export class CartItem {
     /**
      * Creates an instance of CartItem.
