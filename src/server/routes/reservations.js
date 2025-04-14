@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { Router } from "express";
 
-export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
+export function createReservationsRouter({ userRepo, cartRepo, resRepo,  cartItemRepo }) {
     const router = Router();
 
     router.get("/", async (req, res) => {
@@ -48,7 +48,7 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
 
         const est = [];
 
-        for (const cartItem of userCart.getCartItems()){
+        for (const cartItem of userCart.items){
             //1. for each bag do all the checks
 
             //a. Check Expiration date
@@ -66,7 +66,7 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
 
             //b. Check is bag is not already reserved by other userids
 
-            if (cartItem.bag.reservedBy !== null){
+            if (cartItem.bag.available !== null){
                 return res.status(400).json({ error: `Cart Item (having ID ${cartItem.bag.id}) already reserved!` });
             } else {
                 console.log("Test_b OK");
@@ -96,9 +96,10 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
             //HERE:
             try {
                 const dateToday = dayjs().get('date');
-                const resCheckToday = await resRepo.getReservationsByDate(userId, cartItem.bag.estId, dateToday);
+                const resCheckToday = await resRepo.countReservationByDate(userId, cartItem.bag.estId, dateToday);
+                //check if user has already reserved a bag from the same establishment today
 
-                if (resCheckToday.length > 0){
+                if (resCheckToday > 0){
                     //Erro: user is not expected to reserve more than 1 bag from the same establishment on the same day
                     return res.status(400).json({ error: `Error: You are not expected to reserve more than 1 bag from the same establishment on the same day` });
                 }
@@ -114,7 +115,7 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
             //add the cartItem to the list of cartItems
             //at then end: create a new reservation for the userId and all the cartItems
             try {
-                const newReservation = new Reservation(null, user, cartItem);
+                const newReservation = new Reservation(null, user, cartItem, reservationTime);
                 const res_ = await resRepo.createReservation(newReservation);
                 return res.json(res_);
             } catch (error) {
@@ -132,11 +133,17 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
         //try catch error
         try {
             const reservationId = parseInt(req.params.id);
+            //take date today 
+            const canceledAt = dayjs().toDate(); //.getTime(); //in millis
             if (isNaN(reservationId)){
                 return res.status(400).json({ error: "Error: reservationId is not a number!" });
             }
-            const res_ = await resRepo.cancelReservation(reservationId);
-            return res.json(res_);
+            const res_ = await resRepo.cancelReservation(reservationId, canceledAt);
+            if (!res_){
+                return res.status(200).json({ error: "Reservation canceled correctly!" });
+            }
+
+            return res.status(500).json({ error: "Error: Server error!" });
         } catch (error) {
             return res.status(404).json({ error: "Error: Reservation not found!" });
         }
@@ -148,6 +155,7 @@ export function createReservationsRouter({ userRepo, cartRepo, resRepo }) {
         //try catch error
         try {
             const userId = parseInt(req.params.userId);
+
             if (isNaN(userId)){
                 return res.status(400).json({ error: "Error: userId is not a number!" });
             }

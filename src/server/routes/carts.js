@@ -43,11 +43,12 @@ export function createCartsRouter({ cartRepo, userRepo }) {
         }
         try{
             const result = await cartRepo.addBag(userId, bagId_);
+            return res.json(result);
             
         } catch (error) {
             return res.status(500).json({ error: "Error: cannot create a new bag!" });
         }
-        return res.json(result);
+        
     });
 
     //remove bag, so a cartItem, from cart by userid

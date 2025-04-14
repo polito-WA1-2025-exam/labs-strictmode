@@ -88,9 +88,25 @@ export class ReservationRepo {
         return;
     }
 
-
-    async getReservationByDate(userId, estId, createdAt) {
-        
+    /**
+     * Returns the list of reservations made by a user for a specific establishment on a specific date.
+     * * @param {number} userId
+     * * @param {number} estId
+     * * @param {dayjs} createdAt
+     * @returns {number} - The number of reservations made by the user for the establishment on the specified date.
+    */
+    async countReservationByDate(userId, estId, createdAt) {
+        let query = 'SELECT COUNT(*) FROM RESERVATION WHERE userId = ? AND estId = ? AND createdAt = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.all(query, [userId, estId, createdAt], (err, row) => {
+                if (err) {
+                    console.error('Error counting reservations: ', err.message);
+                    reject(err);
+                } else {
+                    resolve(parseInt(row[0][0], 10));
+                }
+            })
+        })
     }
 
     /**
@@ -131,16 +147,16 @@ export class ReservationRepo {
      * Cancel a reservation, without deleting it.
      * @param {Reservation} reservation
      */
-    async cancelReservation(reservation) {
+    async cancelReservation(cartItemId, canceledAt) {
         let query = 'UPDATE RESERVATION SET canceledAt = ? WHERE cartItemId = ?';
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [reservation.canceledAt, reservation.cartItem.id], async (err) => {
+            this.DB.run(query, [canceledAt, cartItemId], async (err) => {
                 if (err) {
                     console.err('Error updating canceledAt in Reservation: ', err.message);
                     reject(err);
                 } else {
                     console.log('Reservation canceled succesfully');
-                    await this.setAvailableAttributesForBags(reservation.cartItem.id, 1);
+                    await this.setAvailableAttributesForBags(cartItemId, 1);
                     resolve(null);
                 }
             })

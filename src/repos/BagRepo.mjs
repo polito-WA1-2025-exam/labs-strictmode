@@ -87,7 +87,8 @@ export class BagRepo {
                         pickupTimeEnd = dayjs(row[0].pickupTimeEnd, 'YYYY-MM-DD');
                         let available = Boolean(row[0].available);
 
-                        let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
+                        //id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+                        let fetchedBag = new Bag(id, bagType, estId, size, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
                         bagItem_list = await this.getItems(fetchedBag);
                         fetchedBag.items = bagItem_list;
                         resolve(fetchedBag);
@@ -134,7 +135,9 @@ export class BagRepo {
                             let pickupTimeEnd = dayjs(row.pickupTimeEnd, 'YYYY-MM-DD');
                             let available = Boolean(row.available);
 
-                            let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
+                            //id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+
+                            let fetchedBag = new Bag(id, bagType, estId, size, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
                             bagItem_list = await this.getItems(fetchedBag);
                             fetchedBag.items = bagItem_list;
 
@@ -199,8 +202,8 @@ export class BagRepo {
     
                             const currentDate = dayjs();
                             if (currentDate.isBefore(pickupTimeEnd)) {
-                            
-                                let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
+                                //id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+                                let fetchedBag = new Bag(id, bagType, estId, size, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
                                 bagItem_list = await this.getItems(fetchedBag);
                                 fetchedBag.items = bagItem_list;
 
