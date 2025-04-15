@@ -17,12 +17,12 @@ export default function Home() {
       {/* Navigation */}
       <Navbar bg="light" expand="lg" className="mb-0">
         <Container>
-          <Navbar.Brand href="#home">SaveBite</Navbar.Brand>
+          <Navbar.Brand href="/home">SaveBite</Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="ms-auto">
-              <Nav.Link href="#home">Home</Nav.Link>
-              <Nav.Link href="#browse">Browse Food</Nav.Link>
+              <Nav.Link href="/home" active>Home</Nav.Link>
+              <Nav.Link href="/establishments">Browse Food</Nav.Link>
               <Nav.Link href="#about">About Us</Nav.Link>
               <Nav.Link href="#contact">Contact</Nav.Link>
               <Nav.Link href="/cart">Cart</Nav.Link> {/* Aggiunto collegamento al carrello */}
