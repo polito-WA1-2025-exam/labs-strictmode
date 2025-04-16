@@ -6,10 +6,8 @@ import BagItem from '../models/BagItem.mjs';
 import { BagItemRepo } from './BagItemRepo.mjs';
 
 export class RemovedRepo {
-
     constructor() {
-        this.pathDB = pathDbFromRepos;
-        this.DB = connect(this.pathDB);
+        this.DB = db;
     }
 
     /**
@@ -48,7 +46,7 @@ export class RemovedRepo {
                     reject(err);
                 } else {
                     if (row) {
-                        let bagItemRepo = new bagItemRepo();
+                        let bagItemRepo = new BagItemRepo(this.DB);
                         let bagItemRemoved = await bagItemRepo.getItemById(bagItemId);
                         resolve(bagItemRemoved);
                     } else {
@@ -96,7 +94,7 @@ export class RemovedRepo {
                     if (rows) {
 
                         bagItemRemoved_list = [];
-                        let bagItemRepo = new BagItemRepo(); 
+                        let bagItemRepo = new BagItemRepo(this.DB); 
 
                         rows.forEach(async row => {
                             let bagItemId = parseInt(row.bagItemId, 10);

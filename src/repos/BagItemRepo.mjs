@@ -4,10 +4,8 @@ import {pathDbFromRepos, connect} from '../../database/index.js';
 import BagItem from '../models/index.mjs'
 
 export class BagItemRepo {
-    
-    constructor () {
-        this.pathDB = pathDbFromRepos;
-        this.DB = connect(this.pathDB);
+    constructor (db) {
+        this.DB = db;
     }
 
     /**

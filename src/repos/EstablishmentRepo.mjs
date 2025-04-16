@@ -5,10 +5,8 @@ import Establishment from '../models/index.mjs'
 import { BagRepo } from './index.mjs';
 
 export class EstablishmentRepo {
-
-    constructor() {
-        this.pathDB = pathDbFromRepos;
-        this.DB = connect(this.pathDB);
+    constructor(db) {
+        this.DB = db;
     }
 
     /**
@@ -113,7 +111,7 @@ export class EstablishmentRepo {
      */
 
     async getBags(establishment) {
-        let bagRepo = new BagRepo();
+        let bagRepo = new BagRepo(this.DB);
         bag_list = await bagRepo.getBagListByEstId(establishment.id);
         return bag_list;
     }

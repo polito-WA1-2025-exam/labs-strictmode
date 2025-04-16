@@ -4,11 +4,8 @@ import {pathDbFromRepos, connect} from '../../database/index.js';
 import User from '../models/index.mjs';
 
 export class UserRepo {
-
-
-    constructor() {
-        this.pathDB = pathDbFromRepos;
-        this.DB = connect(this.pathDB);
+    constructor(db) {
+        this.DB = db;
     }
 
     /**

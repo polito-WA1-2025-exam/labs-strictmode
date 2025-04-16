@@ -6,10 +6,8 @@ import { UserRepo } from './UserRepo.mjs';
 import { BagRepo, CartItemRepo } from './index.mjs';
 
 export class ReservationRepo {
-
-    constructor() {
-        this.pathDB = pathDbFromRepos;
-        this.DB = connect(this.pathDB);
+    constructor(db) {
+        this.DB = db;
     }
 
     /**
@@ -53,8 +51,8 @@ export class ReservationRepo {
                         let createdAt = dayjs(row[0].createdAt, 'YYYY-MM-DD');
                         let canceledAt = dayjs(row[0].canceledAt, 'YYYY-MM-DD');
 
-                        let cartItemRepo = new CartItemRepo();
-                        let userRepo = new UserRepo();
+                        let cartItemRepo = new CartItemRepo(this.DB);
+                        let userRepo = new UserRepo(this.DB);
                         let cartItem = await cartItemRepo.getCartItemById(cartItemId);
                         let userId = await cartItemRepo.getUserIdByCartItemId(cartItemId);
                         let user = await userRepo.getUserById(userId); 
@@ -76,8 +74,8 @@ export class ReservationRepo {
      */
 
     async setAvailableAttributesForBags(cartItemId, available) {
-        let cartItemRepo = new CartItemRepo();
-        let bagRepo = new BagRepo();
+        let cartItemRepo = new CartItemRepo(this.DB);
+        let bagRepo = new BagRepo(this.DB);
         bagId_list = await cartItemRepo.getBagIdListFromCartItemId(cartItemId);
 
         bagId_list.forEach(async bagId => {
@@ -99,7 +97,7 @@ export class ReservationRepo {
      * @returns {Array<Reservation>}
      */
     async listReservationsByUser(userId) {
-        let cartItemRepo = new CartItemRepo();
+        let cartItemRepo = new CartItemRepo(this.DB);
         let cartItem_list = await cartItemRepo.getCartItemListByUserId(userId);
 
         reservation_list = []
@@ -116,7 +114,7 @@ export class ReservationRepo {
      * @returns {Array<Reservation>}
      */
     async listReservationsByEstablishment(estId) {
-        let cartItemRepo = new CartItemRepo();
+        let cartItemRepo = new CartItemRepo(this.DB);
         let cartItem_list = await cartItemRepo.getCartItemListByEstId(estId);
 
         reservation_list = []

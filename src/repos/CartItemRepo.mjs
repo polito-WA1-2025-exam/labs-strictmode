@@ -7,10 +7,8 @@ import { CartSingleElementRepo } from './CartSingleElementRepo.mjs';
 import { RemovedRepo, RemovedRepo } from './RemovedRepo.mjs';
 
 export class CartItemRepo {
-
-    constructor() {
-        this.pathDB = pathDbFromRepos;
-        this.DB = connect(this.pathDB);
+    constructor(db) {
+        this.DB = db;
     }
 
     /**
@@ -30,7 +28,7 @@ export class CartItemRepo {
                 } else {
                     console.log('Cart Item inserted succesfully: ', this.lastID);
                     cartItem.id = this.lastID;
-                    let removedRepo = new RemovedRepo();
+                    let removedRepo = new RemovedRepo(this.DB);
                     
                     cartItem.removedItems.forEach(async bagItem => {
                         await removedRepo.createRemoved(bagItem.id, cartItem.id);
@@ -59,7 +57,7 @@ export class CartItemRepo {
                         let userId = parseInt(row[0].userId, 10);
 
                         let fetchedCartItem = new CartItem(id, bagId, null);
-                        let removedRepo = new RemovedRepo();
+                        let removedRepo = new RemovedRepo(this.DB);
                         let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
@@ -85,7 +83,7 @@ export class CartItemRepo {
                         let userId = parseInt(row[0].userId, 10);
 
                         let fetchedCartItem = new CartItem(id, bagId, null);
-                        let removedRepo = new RemovedRepo();
+                        let removedRepo = new RemovedRepo(this.DB);
                         let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
@@ -117,7 +115,7 @@ export class CartItemRepo {
                         let userId = parseInt(row[0].userId, 10);
 
                         let fetchedCartItem = new CartItem(id, bagId, null);
-                        let removedRepo = new RemovedRepo();
+                        let removedRepo = new RemovedRepo(this.DB);
                         let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
@@ -171,7 +169,7 @@ export class CartItemRepo {
                     reject(err);
                 } else {
                     console.log('cartItem deleting succesfully');
-                    let removedRepo = new RemovedRepo();
+                    let removedRepo = new RemovedRepo(this.DB);
                     await removedRepo.deleteBagItemRemoved(id);
                     resolve(null);
                 }

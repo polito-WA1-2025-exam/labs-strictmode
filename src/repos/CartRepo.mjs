@@ -8,10 +8,8 @@ import { BagRepo, CartItemRepo, RemovedRepo } from './index.mjs';
  * Class representing a repository for managing a shopping cart.
  */
 export class CartRepo {
-    
-    constructor() {
-        this.pathDB = pathDbFromRepos;
-        this.DB = connect(this.pathDB);
+    constructor(db) {
+        this.DB = db;
     }
     
     /**
@@ -21,7 +19,7 @@ export class CartRepo {
      * @param {CartItem} cartItem;
      */
     async addBag(userId, bagId) {
-        let cartItemRepo = new CartItemRepo();
+        let cartItemRepo = new CartItemRepo(this.DB);
         let cartItem = new CartItem(bagId, userId, []);
         cartItem = await cartItemRepo.createCartItem(cartItem, userId);
         return cartItem;
@@ -33,7 +31,7 @@ export class CartRepo {
      * @returns
      */
     async removeBag(userId, bagId) {
-        let cartItemRepo = new CartItemRepo();
+        let cartItemRepo = new CartItemRepo(this.DB);
         await cartItemRepo.deleteCartItem(cartItem.id);
     }
 
@@ -43,7 +41,7 @@ export class CartRepo {
      * @returns {Cart}
      */
     async getCart(userId) {
-        let cartItemRepo = new CartItemRepo();
+        let cartItemRepo = new CartItemRepo(this.DB);
         let cartItem_list = await cartItemRepo.getCartItemListByUserId(userId);
 
         let cart = new Cart(userId);
@@ -62,13 +60,13 @@ export class CartRepo {
     // removedItems -> it might be saved as a string in the DB. THe string contains IDs of bag Items 
 
     async personalizeBag(userId, bagId, removedItems) {
-        let cartItemRepo = new CartItemRepo();
-        let cartItem = cartItemRepo.getCartItemByBagIdUserID(bagId, userId);
+        let cartItemRepo = new CartItemRepo(this.DB);
+        let cartItem = await cartItemRepo.getCartItemByBagIdUserID(bagId, userId);
 
-        let removedRepo = new RemovedRepo();
-        removedItems.forEach(bagItemId => {
-            removedRepo.createRemoved(bagItemId, cartItem.id);
-        })
+        let removedRepo = new RemovedRepo(this.DB);
+        await Promise.all(removedItems.map(bagItemId => {
+            return removedRepo.createRemoved(bagItemId, cartItem.id);
+        }));
 
     }
 }

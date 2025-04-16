@@ -1,8 +1,6 @@
 import sqlite3 from 'sqlite3';
 
-const pathDbFromRepos = '../../database/reservation_system.db';
-
-function connect(pathDB = '../database/reservation_system.db') {
+function connect(pathDB) {
     const sql3 = sqlite3.verbose();
     
     const DB = new sql3.Database(pathDB, sqlite3.OPEN_READWRITE, (err) => {
