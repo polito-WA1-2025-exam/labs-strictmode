@@ -117,23 +117,7 @@ export function createDb(dbPath) {
             return;
           }
           console.log('Database schema created successfully.');
-          
-          // Check tables after successful transaction
-          db.all('SELECT name FROM sqlite_master WHERE type="table"', [], (err, rows) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-            if (rows.length > 0) {
-              console.log('Tables in the database:');
-              rows.forEach((row) => {
-                console.log(row.name);
-              });
-            } else {
-              console.log('No tables found in the database.');
-            }
-            resolve(db);
-          });
+          resolve(db);
         });
       });
     });
