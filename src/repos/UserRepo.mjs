@@ -77,7 +77,7 @@ export class UserRepo {
                         let assignedName = row[0].assignedName;
                         let familyName = row[0].familyName;
     
-                        let fetchedUser = new User(id, email, password, assignedName, familyName);
+                        let fetchedUser = new User(id, email, assignedName, familyName, password);
                         resolve(fetchedUser);
                     } else {
                         resolve(null);

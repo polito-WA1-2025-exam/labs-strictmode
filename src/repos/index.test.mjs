@@ -15,18 +15,24 @@ async function createTestDbRepos() {
 
 // User Repository Tests
 describe('UserRepo', () => {
-  test('should create and retrieve a user', async () => {
-    const { userRepo } = await createTestDbRepos();
-    const user = { name: 'Test User', email: 'test@example.com', password: 'password123' };
-    
-    const addedUser = await userRepo.createUser(user);
-    expect(addedUser).toBeDefined();
-    
-    const retrievedUser = await userRepo.getUserById(addedUser.id);
-    console.log(retrievedUser)
-    expect(retrievedUser).toBeDefined();
-    expect(retrievedUser.assignedName).toBe(user.assignedName);
-    expect(retrievedUser.familyName).toBe(user.familyName);
-    expect(retrievedUser.email).toBe(user.email);
-  });
+    test('should create and retrieve a user', async () => {
+        const { userRepo } = await createTestDbRepos();
+        const user = {
+            name: 'Test User',
+            assignedName: 'Test',
+            familyName: 'User',
+            email: 'test@example.com',
+            password: 'password123'
+        };
+
+        const addedUser = await userRepo.createUser(user);
+        expect(addedUser).toBeDefined();
+
+        const retrievedUser = await userRepo.getUserById(addedUser.id);
+        console.log(retrievedUser)
+        expect(retrievedUser).toBeDefined();
+        expect(retrievedUser.assignedName).toBe(user.assignedName);
+        expect(retrievedUser.familyName).toBe(user.familyName);
+        expect(retrievedUser.email).toBe(user.email);
+    });
 });
