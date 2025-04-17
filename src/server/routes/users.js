@@ -1,6 +1,6 @@
 import express from "express";
 import {isValidEmail, isValidAssignedName, isValidFamilyName} from "../validation.mjs";
-import User from "../models/User.mjs";
+import User from "../../models/User.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
 import { hashPassword, comparePassword } from "../crypto.mjs";
 

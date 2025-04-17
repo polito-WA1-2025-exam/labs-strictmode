@@ -1,10 +1,9 @@
-import { createServer } from "../src/server/server.mjs";
+import { createServer } from "./server.mjs";
 import request from 'supertest';
-import { describe, it } from 'mocha';
-import { expect } from 'chai';
+import { describe, expect, test } from 'vitest';
 
 import dayjs from "dayjs";
-import {Bag, User, Establishment, Reservation, Cart, BagItem, CartItem} from "../src/models/index.mjs";
+import {Bag, User, Establishment, Reservation, Cart, BagItem, CartItem} from "../models/index.mjs";
 
 function createSimpleStubs() {
     const availableBags = [
@@ -422,25 +421,24 @@ function createSimpleStubs() {
 }
 
 
-
 describe('GET /bags', function () {
     const stubs = createSimpleStubs();
     const server = createServer(stubs);
-    it('all bags are returned', async function () {
+    test('all bags are returned', async function () {
         const res = await request(server)
             .get('/bags')
             .expect(200);
         expect(res.body).to.be.an('array');
         expect(res.body.length).to.equal(3);
     });
-    it('bag with id 1 is returned', async function () {
+    test('bag with id 1 is returned', async function () {
         const res = await request(server)
             .get('/bags/1')
             .expect(200);
         expect(res.body).to.be.an('object');
         expect(res.body.id).to.equal(1);
     });
-    it('filter by establishmentId', async function () {
+    test('filter by establishmentId', async function () {
         let res = await request(server)
             .get('/bags?estId=101')
             .expect(200);
@@ -455,7 +453,7 @@ describe('GET /bags', function () {
         expect(res.body.length).to.equal(2);
         expect(res.body[0].id).to.equal(2);
     });
-    it('empty array when no bags are found with filter', async function () {
+    test('empty array when no bags are found with filter', async function () {
         const res = await request(server)
             .get('/bags?estId=101028848')
             .expect(200);

@@ -1,6 +1,6 @@
 import express from "express";
 import isValidString from "../validation.mjs";
-import Establishment from "../models/Establishment.mjs";
+import Establishment from "../../models/Establishment.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
 
 
