@@ -40,6 +40,7 @@ export class ReservationRepo {
 
     async getReservationByCartItemId(cartItemId) {
         let query = 'SELECT * FROM RESERVATION WHERE cartItemId = ?';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
             this.DB.all(query, [cartItemId], async (err, row) => {
                 if (err) {
@@ -51,8 +52,8 @@ export class ReservationRepo {
                         let createdAt = dayjs(row[0].createdAt, 'YYYY-MM-DD');
                         let canceledAt = dayjs(row[0].canceledAt, 'YYYY-MM-DD');
 
-                        let cartItemRepo = new CartItemRepo(this.DB);
-                        let userRepo = new UserRepo(this.DB);
+                        let cartItemRepo = new CartItemRepo(db);
+                        let userRepo = new UserRepo(db);
                         let cartItem = await cartItemRepo.getCartItemById(cartItemId);
                         let userId = await cartItemRepo.getUserIdByCartItemId(cartItemId);
                         let user = await userRepo.getUserById(userId); 

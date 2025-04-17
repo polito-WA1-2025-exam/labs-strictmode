@@ -1,9 +1,4 @@
-import sqlite3 from 'sqlite3';
-import dayjs from 'dayjs';
-import {pathDbFromRepos, connect} from '../../database/index.js';
 import CartItem from '../models/CartItem.mjs';
-import { BagRepo } from './BagRepo.mjs';
-import { CartSingleElementRepo } from './CartSingleElementRepo.mjs'; 
 import { RemovedRepo, RemovedRepo } from './RemovedRepo.mjs';
 
 export class CartItemRepo {
@@ -20,6 +15,7 @@ export class CartItemRepo {
 
     async createCartItem(cartItem, user) {
         let query = 'INSERT INTO CART_ITEM (bagId, userId) VALUES (?, ?)';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
             this.DB.run(query, [cartItem.bag.id, user.id], function (err) {
                 if (err) {
@@ -28,7 +24,7 @@ export class CartItemRepo {
                 } else {
                     console.log('Cart Item inserted succesfully: ', this.lastID);
                     cartItem.id = this.lastID;
-                    let removedRepo = new RemovedRepo(this.DB);
+                    let removedRepo = new RemovedRepo(db);
                     
                     cartItem.removedItems.forEach(async bagItem => {
                         await removedRepo.createRemoved(bagItem.id, cartItem.id);
@@ -45,8 +41,9 @@ export class CartItemRepo {
 
     async getCartItem(bag, user) {
         let query = 'SELECT * FROM CART_ITEM WHERE bagId = ? AND userId = ?';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [bag.id, user.id], async (err, row) => {
+            this.DB.run(query, [bag.id, user.id], async function(err, row) {
                 if (err) {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
@@ -57,7 +54,7 @@ export class CartItemRepo {
                         let userId = parseInt(row[0].userId, 10);
 
                         let fetchedCartItem = new CartItem(id, bagId, null);
-                        let removedRepo = new RemovedRepo(this.DB);
+                        let removedRepo = new RemovedRepo(db);
                         let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
@@ -71,8 +68,9 @@ export class CartItemRepo {
 
     async getCartItemByBagIdUserID(bagId, userId) {
         let query = 'SELECT * FROM CART_ITEM WHERE bagId = ? AND userId = ?';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [bagId, userId], async (err, row) => {
+            this.DB.run(query, [bagId, userId], async function(err, row) {
                 if (err) {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
@@ -83,7 +81,7 @@ export class CartItemRepo {
                         let userId = parseInt(row[0].userId, 10);
 
                         let fetchedCartItem = new CartItem(id, bagId, null);
-                        let removedRepo = new RemovedRepo(this.DB);
+                        let removedRepo = new RemovedRepo(db);
                         let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
@@ -103,6 +101,7 @@ export class CartItemRepo {
 
     async getCartItemById(id) {
         let query = 'SELECT * FROM CART_ITEM WHERE id = ?';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
             this.DB.run(query, [id], async (err, row) => {
                 if (err) {
@@ -115,7 +114,7 @@ export class CartItemRepo {
                         let userId = parseInt(row[0].userId, 10);
 
                         let fetchedCartItem = new CartItem(id, bagId, null);
-                        let removedRepo = new RemovedRepo(this.DB);
+                        let removedRepo = new RemovedRepo(db);
                         let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
@@ -162,6 +161,7 @@ export class CartItemRepo {
 
     async deleteCartItem(id) {
         let query = 'DELETE FROM CART_ITEM WHERE id = ?';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
             this.DB.run(query, [id], async (err) => {
                 if (err) {
@@ -169,7 +169,7 @@ export class CartItemRepo {
                     reject(err);
                 } else {
                     console.log('cartItem deleting succesfully');
-                    let removedRepo = new RemovedRepo(this.DB);
+                    let removedRepo = new RemovedRepo(db);
                     await removedRepo.deleteBagItemRemoved(id);
                     resolve(null);
                 }

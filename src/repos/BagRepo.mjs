@@ -1,6 +1,4 @@
-import sqlite3 from 'sqlite3';
 import dayjs from 'dayjs';
-import {pathDbFromRepos, connect} from '../../database/index.js';
 import Bag from '../models/index.mjs'
 import BagItem from '../models/index.mjs';
 import BagItemRepo from './index.mjs'
@@ -17,6 +15,7 @@ export class BagRepo {
      */
     async createBag(bag) {
         let query = 'INSERT INTO BAG (estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
             this.DB.all(query, [bag.estId, bag.size, bag.bagType, bag.tags, bag.price, bag.pickupTimeStart, bag.pickupTimeEnd, bag.available], async function (err) {
                 if (err) {
@@ -25,8 +24,8 @@ export class BagRepo {
                 } else {
                     console.log('Bag inserted successfully with ID:', this.lastID);
                     
-                    // creating all the bagItems records in the DB
-                    let bagItemRepo = new BagItemRepo(this.DB);
+                    // creating all the bagItems records in the db
+                    let bagItemRepo = new BagItemRepo(db);
                     bag.items.forEach(async bagItem => {
                         await bagItemRepo.createBagItem(bagItem);
                     })
@@ -222,7 +221,7 @@ export class BagRepo {
      */
     async addItem(bagItem) {
         let bagItemRepo = new BagItemRepo(this.DB);
-        let bagItem = await bagItemRepo.createBagItem(bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit);
+        bagItem = await bagItemRepo.createBagItem(bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit);
 
         return bagItem;
     }

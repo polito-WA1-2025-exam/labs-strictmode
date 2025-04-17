@@ -1,7 +1,4 @@
-import sqlite3 from 'sqlite3';
-import dayjs from 'dayjs';
-import {pathDbFromRepos, connect} from '../../database/index.js';
-import User from '../models/index.mjs';
+import { User } from '../models/index.mjs';
 
 export class UserRepo {
     constructor(db) {
@@ -14,14 +11,15 @@ export class UserRepo {
      */
     async createUser(user) {
         let query = 'INSERT INTO USER (email, password, assignedName, familyName) VALUES (?, ?, ?, ?)';
+        const self = this;
         return new Promise ((resolve, reject) => {
-            this.DB.all(query, [user.email, user.password, user.assignedName, user.familyName], async function (err) {
+            this.DB.run(query, [user.email, user.password, user.assignedName, user.familyName], async function (err) {
                 if (err) {
                     console.error('Error inserting user: ', err.message);
                     reject(err);
                 } else {
                     console.log('User inserted successfully with ID:', this.lastID);
-                    let fetchedUser = await this.getUserById(this.lastID);
+                    let fetchedUser = await self.getUserById(this.lastID);
                     resolve(fetchedUser);
                 }
             });
@@ -50,10 +48,10 @@ export class UserRepo {
         return new Promise((resolve, reject) => {
             this.DB.run(query, [id], (err) => {
                 if (err) {
-                    console.err('Error deleting user: ', err.message);
+                    console.error('Error deleting user: ', err.message);
                     reject(err);
                 } else {
-                    console.err('User delete succesfully');
+                    console.error('User delete succesfully');
                     resolve(null);
                 }
             })
