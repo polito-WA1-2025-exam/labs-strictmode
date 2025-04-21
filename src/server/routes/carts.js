@@ -1,5 +1,5 @@
 import express from "express";
-import {User, Bag} from "../models/index.mjs";
+import {User, Bag} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs";
 
 

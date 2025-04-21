@@ -1,15 +1,8 @@
-import sqlite3 from 'sqlite3';
-import dayjs from 'dayjs';
-import {pathDbFromRepos, connect} from '../../database/index.js';
-import CartItem from '../models/CartItem.mjs';
-import BagItem from '../models/BagItem.mjs';
 import { BagItemRepo } from './BagItemRepo.mjs';
 
 export class RemovedRepo {
-
     constructor() {
-        this.pathDB = pathDbFromRepos;
-        this.DB = connect(this.pathDB);
+        this.DB = db;
     }
 
     /**
@@ -41,6 +34,7 @@ export class RemovedRepo {
 
     async getBagItemRemoved(bagItemId, cartItemId) {
         let query = 'SELECT * FROM REMOVED WHERE bagItemId = ? AND cartItemId = ?';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
             this.DB.all(query, [bagItemId, cartItemId], async (err, row) => {
                 if (err) {
@@ -48,7 +42,7 @@ export class RemovedRepo {
                     reject(err);
                 } else {
                     if (row) {
-                        let bagItemRepo = new bagItemRepo();
+                        let bagItemRepo = new BagItemRepo(db);
                         let bagItemRemoved = await bagItemRepo.getItemById(bagItemId);
                         resolve(bagItemRemoved);
                     } else {
@@ -87,6 +81,7 @@ export class RemovedRepo {
 
     async getAllBagItemRemoved(userId) {
         let query = 'SELECT * FROM REMOVED WHERE userId = ?';
+        const db = this.DB;
         return new Promise((resolve, reject) => {
             this.DB.all(query, [userId], (err, rows) => {
                 if (err) {
@@ -96,7 +91,7 @@ export class RemovedRepo {
                     if (rows) {
 
                         bagItemRemoved_list = [];
-                        let bagItemRepo = new BagItemRepo(); 
+                        let bagItemRepo = new BagItemRepo(db); 
 
                         rows.forEach(async row => {
                             let bagItemId = parseInt(row.bagItemId, 10);

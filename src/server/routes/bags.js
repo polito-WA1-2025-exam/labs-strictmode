@@ -1,6 +1,6 @@
 import express from "express";
 import { isValidString, isValidBagSize, isValidBagType, isValidISODate } from "../validation.mjs";
-import {Bag, Establishment, BagItem} from "../models/index.mjs";
+import {Bag, Establishment, BagItem} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs";
 
 

@@ -7,5 +7,12 @@
     "express": "^4.21.2",
     "morgan": "^1.10.0",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "supertest": "^7.1.0",
+    "vitest": "^3.1.1"
+  },
+  "scripts": {
+    "test": "vitest"
   }
 }
