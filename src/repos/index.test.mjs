@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, beforeEach } from 'vitest';
 import { createDb } from "../../database";
 import { BagRepo, UserRepo, CartRepo, ReservationRepo, EstablishmentRepo } from "../repos/index.mjs";
 
@@ -129,5 +129,88 @@ describe('UserRepo', () => {
             // Expect an error due to duplicate email
             expect(error).toBeDefined();
         }
+    });
+});
+
+
+//Establishment Repository Tests
+describe('EstablishmentRepo', () => {
+
+    let establishmentRepo;
+    let bagsRepo
+    beforeEach(async () => {
+        const {estRepo, bagRepo} = await createTestDbRepos();
+        establishmentRepo = estRepo;
+        bagsRepo = bagRepo;
+    });
+
+    test('should create a new establishment and retrieve it with bags', async () => {
+        const newEstablishment = {
+            name: 'Test Establishment',
+            bags: [], // Initially no bags
+            estType: 'Restaurant',
+            address: '123 Test St'
+        }
+        const createdEstablishment = await establishmentRepo.createEstablishment(newEstablishment);
+
+        expect(createdEstablishment.id).toBeDefined();
+        expect(createdEstablishment.name).toBe('Test Establishment');
+        expect(createdEstablishment.estType).toBe('Restaurant');
+        expect(createdEstablishment.address).toBe('123 Test St');
+        expect(createdEstablishment.bags).toEqual([]); // Initially no bags
+
+
+
+        //Retrireve the establishment by ID
+        const fetchedEstablishment = await establishmentRepo.getEstablishmentById(1);
+        expect(fetchedEstablishment).toBeDefined();
+        expect(fetchedEstablishment.name).toBe(newEstablishment.name);
+        expect(fetchedEstablishment.estType).toBe(newEstablishment.estType);
+        expect(fetchedEstablishment.address).toBe(newEstablishment.address);
+        expect(fetchedEstablishment.bags).toEqual(newEstablishment.bags); // Initially no bags
+
+
+
+
+        // Optionally, create a bag associated with this establishment and check retrieval
+        
+        
+        const allFetchedEstablishments = await establishmentRepo.listAllEstablishments();
+        console.log(allFetchedEstablishments)
+        expect(allFetchedEstablishments).toHaveLength(1);
+        expect(allFetchedEstablishments[0].id).toBe(createdEstablishment.id);
+
+        /**
+         * @constructor
+         * @param {number} id - Unique identifier for the bag.
+         * @param {string} bagType - Type of the bag (e.g., "regular", "surprise").
+         * @param {number} estId - The establishment ID associated with the bag.
+         * @param {string} size - "small", "medium", "large".
+         * @param {Array<string>} tags - Example: ["vegan", "gluten free"].
+         * @param {number} price - The price of the bag.
+         * @param {Array<Object>} items - Array of items in the bag.
+         * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
+         * @param {string} pickupTimeEnd - The end time for pickup in ISO 8601 format.
+         * @param {boolean} available
+         */
+        await bagsRepo.createBag({
+            bagType: 'regular',
+            estId: createdEstablishment.id,
+            size: 'medium',
+            tags: ['vegan', 'gluten free'],
+            price: 10.99,
+            items: ['tomato', 'lettuce', 'carrot'],
+            pickupTimeStart: "2021-12-01T10:00:00.000Z",
+            pickupTimeEnd: "2026-12-01T12:00:00.000Z",
+            available: true
+        });
+        const fetchedEstablishmentWithBags = await establishmentRepo.getEstablishmentById(createdEstablishment.id);
+        expect(fetchedEstablishmentWithBags).toBeDefined();
+        expect(fetchedEstablishmentWithBags.name).toBe(newEstablishment.name);
+        expect(fetchedEstablishmentWithBags.bags).toBeDefined();
+        expect(fetchedEstablishmentWithBags.bags).toHaveLength(1);
+        
+        
+        
     });
 });

@@ -45,7 +45,8 @@ export function createDb(dbPath) {
         db.run(`CREATE TABLE IF NOT EXISTS ESTABLISHMENT (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name VARCHAR(20),
-          estType VARCHAR(20)
+          estType VARCHAR(20),
+          address VARCHAR(200)
         )`, handleError);
 
         // BAG: Each record is a bag that contains multiple elements inside (bagItem).

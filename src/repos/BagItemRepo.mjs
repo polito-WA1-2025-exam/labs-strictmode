@@ -1,4 +1,4 @@
-import BagItem from '../models/index.mjs'
+import {BagItem} from '../models/index.mjs'
 
 export class BagItemRepo {
     constructor (db) {
@@ -13,14 +13,15 @@ export class BagItemRepo {
 
     async createBagItem(bagItem) {
         let query = 'INSERT INTO BAG_ITEM (bagId, name, quantity, measurementUnit) VALUES (?, ?, ?, ?)';
+        const self = this; // Preserve the 'this' context of the BagItemRepo in order to use getBagItemById(this.lastID) in the callback
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit], async function (err) {
+            this.DB.run(query, [bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit], async function (err) {
                 if (err) {
                     console.error('Error inserting bagItem:', err.message);
                     reject(err);
                 } else {
                     console.log('BagItem inserted successfully with ID:', this.lastID);
-                    let fetchedBagItem = await this.getBagItemById(this.lastID);
+                    let fetchedBagItem = await self.getBagItemById(this.lastID);
                     resolve(fetchedBagItem);
                 }
             });
@@ -83,7 +84,8 @@ export class BagItemRepo {
      */
 
     async getBagItemListByBagItemId(id) {
-        let query = 'SELECT * FROM CART_SINGLE_ELEMENT WHERE bagItemId = ?';
+        //what is CART_SINGLE_ELEMENT???????? -> BAG_ITEM?????
+        let query = 'SELECT * FROM BAG_ITEM WHERE id = ?';
         return new Promise((resolve, reject) => {
             this.DB.all(query, [id], (err, rows) => {
                 if(err) {

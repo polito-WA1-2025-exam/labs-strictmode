@@ -14,6 +14,7 @@ export class Bag {
      * @param {string} size - "small", "medium", "large".
      * @param {Array<string>} tags - Example: ["vegan", "gluten free"].
      * @param {number} price - The price of the bag.
+     * @param {Array<Object>} items - Array of items in the bag.
      * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
      * @param {string} pickupTimeEnd - The end time for pickup in ISO 8601 format.
      * @param {boolean} available

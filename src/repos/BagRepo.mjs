@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
-import Bag from '../models/index.mjs'
-import BagItem from '../models/index.mjs';
-import BagItemRepo from './index.mjs'
+import {Bag} from '../models/index.mjs'
+import {BagItem} from '../models/index.mjs';
+import {BagItemRepo} from './index.mjs'
 
 export class BagRepo {
     constructor(db) {
@@ -16,8 +16,9 @@ export class BagRepo {
     async createBag(bag) {
         let query = 'INSERT INTO BAG (estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         const db = this.DB;
+        const self = this; // Preserve the 'this' context of the BagRepo in order to use getBagById(this.lastID) in the callback
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [bag.estId, bag.size, bag.bagType, bag.tags, bag.price, bag.pickupTimeStart, bag.pickupTimeEnd, bag.available], async function (err) {
+            this.DB.run(query, [bag.estId, bag.size, bag.bagType, bag.tags, bag.price, bag.pickupTimeStart, bag.pickupTimeEnd, bag.available], async function (err) {
                 if (err) {
                     console.error('Error inserting bag: ', err.message);
                     reject(err);
@@ -31,8 +32,8 @@ export class BagRepo {
                     })
 
                     // fetch all the data of the bag
-                    let fetchedBag = await this.getBagById(this.lastID);
-                    bagItem_list = await this.getItems(fetchedBag);
+                    let fetchedBag = await self.getBagById(this.lastID);
+                    const bagItem_list = await self.getItems(fetchedBag);
                     fetchedBag.items = bagItem_list;
                     resolve(fetchedBag);
                 }
@@ -73,19 +74,19 @@ export class BagRepo {
                     console.error('Error inserting bag: ', err.message);
                     reject(err);
                 } else {
-                    if (row) {
-                        let id = parseInt(row[0].id, 10);
-                        let estId = parseInt(row[0].estId, 10);
-                        let size = row[0].size;
-                        let bagType = row[0].bagType;
-                        let tags = row[0].tags;
-                        let price = parseFloat(row[0].price);
-                        pickupTimeStart = dayjs(row[0].pickupTimeStart, 'YYYY-MM-DD');
-                        pickupTimeEnd = dayjs(row[0].pickupTimeEnd, 'YYYY-MM-DD');
-                        let available = Boolean(row[0].available);
+                    if (row && row.length > 0) {
+                        const id = parseInt(row[0].id, 10);
+                        const estId = parseInt(row[0].estId, 10);
+                        const size = row[0].size;
+                        const bagType = row[0].bagType;
+                        const tags = row[0].tags;
+                        const price = parseFloat(row[0].price);
+                        const pickupTimeStart = dayjs(row[0].pickupTimeStart, 'YYYY-MM-DD');
+                        const pickupTimeEnd = dayjs(row[0].pickupTimeEnd, 'YYYY-MM-DD');
+                        const available = Boolean(row[0].available);
 
-                        let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
-                        bagItem_list = await this.getItems(fetchedBag);
+                        const fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
+                        const bagItem_list = await this.getItems(fetchedBag);
                         fetchedBag.items = bagItem_list;
                         resolve(fetchedBag);
                     } else {
@@ -104,23 +105,25 @@ export class BagRepo {
 
     async getItems(id) {
         let bagItemRepo = new BagItemRepo(this.DB);
-        bagItem_list = await bagItemRepo.getBagItemListByBagItemId(id);
+        const bagItem_list = await bagItemRepo.getBagItemListByBagItemId(id);
         return bagItem_list;
     }
 
-    
+
+
     async getBagListByEstId(estId) {
         let query = 'SELECT * FROM BAG WHERE estId = ?';
-        return new Promise((resolve, reject) => {
-            thid.DB.all(query, [estId], (err, rows) => {
+        return new Promise((resolve, reject) => { 
+            this.DB.all(query, [estId], async (err, rows) => {
                 if (err) {
-                    console.error('Error retrieving bagg list ', err.message);
+                    console.error('Error retrieving bag list ', err.message);
                     reject(err);
                 } else {
                     if (rows) {
-                        let bag_list = [];
-
-                        rows.forEach( async row => {
+                        const bag_list = [];
+                        console.log("BAGLIST rows: ", rows);
+    
+                        for (const row of rows) {
                             let id = parseInt(row.id, 10);
                             let estId = parseInt(row.estId, 10);
                             let size = row.size;
@@ -130,21 +133,20 @@ export class BagRepo {
                             let pickupTimeStart = dayjs(row.pickupTimeStart, 'YYYY-MM-DD');
                             let pickupTimeEnd = dayjs(row.pickupTimeEnd, 'YYYY-MM-DD');
                             let available = Boolean(row.available);
-
-                            let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
-                            bagItem_list = await this.getItems(fetchedBag);
+    
+                            const fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
+                            const bagItem_list = await this.getItems(fetchedBag);
                             fetchedBag.items = bagItem_list;
-
                             bag_list.push(fetchedBag);
-                        })
-                        resolve(bag_list)
-
+                        }
+                        resolve(bag_list);
                     } else {
+                        console.log('No bags found for the given establishment ID');
                         resolve(null);
                     }
                 }
-            })
-        })  
+            });
+        });
     }
 
     /**
@@ -198,7 +200,7 @@ export class BagRepo {
                             if (currentDate.isBefore(pickupTimeEnd)) {
                             
                                 let fetchedBag = new Bag(id, estId, size, bagType, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
-                                bagItem_list = await this.getItems(fetchedBag);
+                                const bagItem_list = await this.getItems(fetchedBag);
                                 fetchedBag.items = bagItem_list;
 
                                 bag_list.push(fetchedBag);
