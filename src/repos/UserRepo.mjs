@@ -45,6 +45,7 @@ export class UserRepo {
 
     async deleteUser(id) {
         let query = 'DELETE FROM USER WHERE id = ?';
+        console.log('Deleting user with ID:', id);
         return new Promise((resolve, reject) => {
             this.DB.run(query, [id], (err) => {
                 if (err) {
@@ -70,7 +71,9 @@ export class UserRepo {
                     console.error('Error retriving user: ', err.message);
                     reject(err);
                 } else {
-                    if (row) {
+                    // if no error occurs, the db return an arrays of rows, if they're empty it means that the user doesn't exist
+                    if (row && row.length > 0) {
+                        console.log('User retrieved successfully:', row[0]);
                         let id = parseInt(row[0].id, 10);
                         let email = row[0].email;
                         let password = row[0].password;

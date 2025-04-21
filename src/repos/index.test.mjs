@@ -36,6 +36,7 @@ describe('UserRepo', () => {
         expect(retrievedUser.email).toBe(user.email);
     });
 
+
     test('should update an existing user', async () => {
         const { userRepo } = await createTestDbRepos();
         // Create initial user
@@ -64,6 +65,7 @@ describe('UserRepo', () => {
         expect(updatedUser.assignedName).toBe('Updated');
         expect(updatedUser.familyName).toBe('Name');
     });
+
     
     test('should delete an existing user', async () => {
         const { userRepo } = await createTestDbRepos();
