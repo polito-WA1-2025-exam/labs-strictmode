@@ -177,6 +177,7 @@ describe('EstablishmentRepo', () => {
         
         const allFetchedEstablishments = await establishmentRepo.listAllEstablishments();
         console.log(allFetchedEstablishments)
+        expect(allFetchedEstablishments).toBeDefined();
         expect(allFetchedEstablishments).toHaveLength(1);
         expect(allFetchedEstablishments[0].id).toBe(createdEstablishment.id);
 
@@ -212,5 +213,145 @@ describe('EstablishmentRepo', () => {
         
         
         
+    });
+
+
+    test('should update an existing establishment', async () => {
+        const newEstablishment = {
+            name: 'Test Establishment',
+            bags: [], // Initially no bags
+            estType: 'Restaurant',
+            address: '123 Test St'
+        }
+        const createdEstablishment = await establishmentRepo.createEstablishment(newEstablishment);
+
+        expect(createdEstablishment.id).toBeDefined();
+        expect(createdEstablishment.name).toBe(newEstablishment.name);
+        expect(createdEstablishment.estType).toBe(newEstablishment.estType);
+        expect(createdEstablishment.address).toBe(newEstablishment.address);
+        expect(createdEstablishment.bags).toEqual(newEstablishment.bags); // Initially no bags
+
+    
+        const originalEstIndex = createdEstablishment.id;
+
+        // Update the establishment
+        createdEstablishment.name = 'Updated Establishment';
+        createdEstablishment.estType = 'Cafe';
+        createdEstablishment.address = '456 Updated St';
+
+        await establishmentRepo.updateEstablishment(createdEstablishment);
+
+
+        // Retrieve the updated establishment
+        const updatedEstablishment = await establishmentRepo.getEstablishmentById(originalEstIndex);
+        expect(updatedEstablishment).toBeDefined();
+        expect(updatedEstablishment.id).toBe(originalEstIndex);
+        expect(updatedEstablishment).toBeDefined();
+        expect(updatedEstablishment.name).toBe('Updated Establishment');
+        expect(updatedEstablishment.estType).toBe('Cafe');
+        expect(updatedEstablishment.address).toBe('456 Updated St');
+
+
+        //List all establishments
+        const allFetchedEstablishments = await establishmentRepo.listAllEstablishments();
+        expect(allFetchedEstablishments).toBeDefined();
+        expect(allFetchedEstablishments).toHaveLength(1);
+        expect(allFetchedEstablishments[0].id).toBe(originalEstIndex);
+        expect(allFetchedEstablishments[0].name).toBe(updatedEstablishment.name);
+        expect(allFetchedEstablishments[0].estType).toBe(updatedEstablishment.estType);
+        expect(allFetchedEstablishments[0].address).toBe(updatedEstablishment.address);
+        expect(allFetchedEstablishments[0].bags).toEqual(updatedEstablishment.bags); // Initially no bags
+
+
+
+    });
+
+
+    test('should delete an existing establishment', async () => {
+        const newEstablishment = {
+            name: 'Test Establishment',
+            bags: [], // Initially no bags
+            estType: 'Restaurant',
+            address: '123 Test St'
+        }
+        const createdEstablishment = await establishmentRepo.createEstablishment(newEstablishment);
+
+        expect(createdEstablishment.id).toBeDefined();
+        expect(createdEstablishment.name).toBe(newEstablishment.name);
+        expect(createdEstablishment.estType).toBe(newEstablishment.estType);
+        expect(createdEstablishment.address).toBe(newEstablishment.address);
+        expect(createdEstablishment.bags).toEqual(newEstablishment.bags); // Initially no bags
+
+
+        // Delete the establishment
+        await establishmentRepo.deleteEstablishment(createdEstablishment.id);
+
+        //Try to retrieve the deleted establishment
+        const deletedEstablishment = await establishmentRepo.getEstablishmentById(createdEstablishment.id);
+        expect(deletedEstablishment).toBeNull();
+
+
+        //List all establishments
+        const allFetchedEstablishments = await establishmentRepo.listAllEstablishments();
+        expect(allFetchedEstablishments).toBeDefined();
+        expect(allFetchedEstablishments).toHaveLength(0); // No establishments should be present after deletion
+
+    });
+
+    test('should save the correct number of establishments', async () => {
+        const newEstablishment = {
+            name: 'Test Establishment',
+            bags: [], // Initially no bags
+            estType: 'Restaurant',
+            address: '123 Test St'
+        }
+        const createdEstablishment = await establishmentRepo.createEstablishment(newEstablishment);
+
+        expect(createdEstablishment.id).toBeDefined();
+        expect(createdEstablishment.name).toBe(newEstablishment.name);
+        expect(createdEstablishment.estType).toBe(newEstablishment.estType);
+        expect(createdEstablishment.address).toBe(newEstablishment.address);
+        expect(createdEstablishment.bags).toEqual(newEstablishment.bags); // Initially no bags
+
+
+        //Add a second establishment
+        const newEstablishment2 = {
+            name: 'Test Establishment 2',
+            bags: [], // Initially no bags
+            estType: 'Fast Food',
+            address: '789 Fast St'
+        }
+
+        const createdEstablishment2 = await establishmentRepo.createEstablishment(newEstablishment2);
+        expect(createdEstablishment2.id).toBeDefined();
+        expect(createdEstablishment2.name).toBe(newEstablishment2.name);
+        expect(createdEstablishment2.estType).toBe(newEstablishment2.estType);
+        expect(createdEstablishment2.address).toBe(newEstablishment2.address);
+        expect(createdEstablishment2.bags).toEqual([]); // Initially no bags
+
+
+        //List all establishments
+        const allFetchedEstablishments = await establishmentRepo.listAllEstablishments();
+        expect(allFetchedEstablishments).toBeDefined();
+        expect(allFetchedEstablishments).toHaveLength(2);
+        expect(allFetchedEstablishments[0].id).toBe(createdEstablishment.id);
+        expect(allFetchedEstablishments[0].name).toBe(createdEstablishment.name);
+        expect(allFetchedEstablishments[0].estType).toBe(createdEstablishment.estType);
+        expect(allFetchedEstablishments[0].address).toBe(createdEstablishment.address);
+        expect(allFetchedEstablishments[0].bags).toEqual(createdEstablishment.bags); // Initially no bags
+        expect(allFetchedEstablishments[1].id).toBe(createdEstablishment2.id);
+        expect(allFetchedEstablishments[1].name).toBe(createdEstablishment2.name);
+        expect(allFetchedEstablishments[1].estType).toBe(createdEstablishment2.estType);
+        expect(allFetchedEstablishments[1].address).toBe(createdEstablishment2.address);
+        expect(allFetchedEstablishments[1].bags).toEqual(createdEstablishment2.bags); // Initially no bags
+
+
+        //Now delete the first establishment
+        await establishmentRepo.deleteEstablishment(createdEstablishment.id);
+
+        //List all establishments again
+        const allFetchedEstablishmentsAfterDelete = await establishmentRepo.listAllEstablishments();
+        expect(allFetchedEstablishmentsAfterDelete).toBeDefined();
+        expect(allFetchedEstablishmentsAfterDelete).toHaveLength(1); // Only one establishment should remain
     });
 });

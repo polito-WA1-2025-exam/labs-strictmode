@@ -36,14 +36,14 @@ export class EstablishmentRepo {
      */
 
     async updateEstablishment(establishment) {
-        let query = 'UPDATE ESTABLISHMENT SET name = ?, estType = ? address = ?, WHERE id = ?'
+        let query = 'UPDATE ESTABLISHMENT SET name = ?, estType = ?, address = ? WHERE id = ?'
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [establishment.name, establishment.estType, establishment.id, establishment.address], (err) => {
+            this.DB.run(query, [establishment.name, establishment.estType, establishment.address, establishment.id], (err) => {
                 if (err) {
                     console.error('Error updating establishment: ', err.message);
                     reject(err);
                 } else {
-                    console.log('BagItem updated successfully');
+                    console.log('Establishment updated successfully');
                     resolve(null);
                 }
             })
@@ -100,7 +100,7 @@ export class EstablishmentRepo {
                     console.error('Error deleting establishment: ', err.message);
                     reject(err);
                 } else {
-                    console.log('Establishment deleted succesfully: ', err.message);
+                    console.log('Establishment deleted succesfully: ', id);
                     resolve(null);
                 }
             })
