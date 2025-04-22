@@ -60,7 +60,7 @@ export class BagItemRepo {
                     console.log('Error retriving bagItem: ', err.message);
                     reject(err);
                 } else {
-                    if (row) {
+                    if (row && row.length > 0) {
                         let id = parseInt(row[0].id, 10);
                         let bagId = parseInt(row[0].bagId, 10);
                         let name = row[0].name;
@@ -83,7 +83,7 @@ export class BagItemRepo {
      * @returns {Array<bagItem>}
      */
 
-    async getBagItemListByBagItemId(id) {
+    async getBagItemListByBagId(id) {
         //what is CART_SINGLE_ELEMENT???????? -> BAG_ITEM?????
         let query = 'SELECT * FROM BAG_ITEM WHERE bagId = ?';
         return new Promise((resolve, reject) => {
@@ -119,7 +119,7 @@ export class BagItemRepo {
      * @param {number} id 
      * @returns 
      */
-    async deleteItem(id) {
+    async deleteBagItem(id) {
         let query = 'DELETE FROM BAG_ITEM WHERE id = ?';
         return new Promise((resolve, reject) => {
             this.DB.run(query, [id], (err) => {

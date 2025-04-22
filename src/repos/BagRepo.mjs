@@ -154,7 +154,7 @@ export class BagRepo {
 
     async getItems(id) {
         let bagItemRepo = new BagItemRepo(this.DB);
-        const bagItem_list = await bagItemRepo.getBagItemListByBagItemId(id);
+        const bagItem_list = await bagItemRepo.getBagItemListByBagId(id);
         return bagItem_list;
     }
 
@@ -272,9 +272,9 @@ export class BagRepo {
      */
     async addItem(bagItem) {
         let bagItemRepo = new BagItemRepo(this.DB);
-        bagItem = await bagItemRepo.createBagItem(bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit);
+        const bagItemReturned = await bagItemRepo.createBagItem(bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit);
 
-        return bagItem;
+        return bagItemReturned;
     }
 
     /**
@@ -283,9 +283,9 @@ export class BagRepo {
      */
     async removeItem(bagItemId) {
         let bagItemRepo = new BagItemRepo(this.DB);
-        let msg = await bagItemRepo.deleteItem(bagItemId);
+        const res = await bagItemRepo.deleteBagItem(bagItemId);
 
-        return;
+        return res;
     }
 
 }
