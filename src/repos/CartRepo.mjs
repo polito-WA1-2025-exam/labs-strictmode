@@ -32,7 +32,7 @@ export class CartRepo {
      */
     async removeBag(userId, bagId) {
         let cartItemRepo = new CartItemRepo(this.DB);
-        await cartItemRepo.deleteCartItem(cartItem.id);
+        return await cartItemRepo.deleteCartItemByBagIdUserId(bagId, userId);
     }
 
     /**

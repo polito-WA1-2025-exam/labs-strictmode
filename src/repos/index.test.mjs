@@ -1031,5 +1031,114 @@ describe('CartRepo', () => {
 
     });
 
+    test("should handle multiple cartItems into one cart", async () => {
+
+        //create a second bag
+        const newBag2 = {
+            bagType: 'big',
+            estId: createdEstablishment.id,
+            size: 'large',
+            tags: 'high protein, low carb',
+            price: 10.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: true
+        }
+        const bagItem4 = {
+            name: 'Potato',
+            quantity: 2,
+            measurementUnit: 'kg',
+        };
+
+        newBag2.items = [bagItem4];
+
+        //add the second bag
+        const createdBag2 = await bagsRepo.createBag(newBag2);
+        expect(createdBag2).toBeDefined();
+        expect(createdBag2.id).toBeDefined();
+        expect(createdBag2.estId).toBe(createdEstablishment.id);
+        expect(createdBag2.items).toBeDefined();
+        expect(createdBag2.items).toHaveLength(1); // just 1 item added
+
+
+        //add createdBag to the cart of user createdUser
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+
+        //add createdBag2 to the cart of user createdUser
+        const cartItem2 = await crtRepo.addBag(createdUser.id, createdBag2);
+
+        //retrieve the cart of user createdUser
+        const cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+        expect(cart.items).toBeDefined();
+        //count the number of items in the cart
+        expect(cart.items).toHaveLength(2); // Two items added to the cart
+
+        //check if the first cartItem is correct
+        expect(cart.items[0].id).toBeDefined();
+        expect(cart.items[0].id).toBe(cartItem.id);
+        expect(cart.items[0].bag.id).toBe(cartItem.bag.id);
+        expect(cart.items[0].userId).toBe(cartItem.userId);
+
+        //check if the second cartItem is correct
+        expect(cart.items[1].id).toBeDefined();
+        expect(cart.items[1].id).toBe(cartItem2.id);
+        expect(cart.items[1].bag.id).toBe(cartItem2.bag.id);
+        expect(cart.items[1].userId).toBe(cartItem2.userId);
+
+    });
+
+    test("should handle cartItem removal from the cart", async () => {
+
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+        expect(cartItem).toBeDefined();
+        expect(cartItem.id).toBeDefined();
+
+        //retrieve the cart of user createdUser
+        let cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+
+        //prior to removal, check if the cart has the cartItem
+        expect(cart.items).toBeDefined();
+        expect(cart.items).toHaveLength(1); // One item added to the cart
+
+
+        //remove the cartItem from the cart of user createdUser
+
+        await crtRepo.removeBag(createdUser.id, cartItem.id);
+
+        //retrieve the cart of user createdUser
+        cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+        
+        //since the cart should have NO cartItems, cart.items should be null
+        expect(cart.items).toBeNull(); // No items in the cart after removal
+
+    });
+
+    test("should handle cartItem removal of a non-existent bag", async () => {
+
+        //as of now the cart of createdUser has no bags
+        const cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+        //since the cart should have NO cartItems, cart.items should be null
+        expect(cart.items).toBeNull(); // No items in the cart after removal
+
+
+        //Now, try removing a non-existent bag from the cart of user createdUser
+        const res = await crtRepo.removeBag(9999, 99999); 
+        //expect null, no errors should be thrown since the bagId and userId are not in the DB
+        expect(res).toBeNull(); // No items in the cart after removal
+    });
+
 });
 

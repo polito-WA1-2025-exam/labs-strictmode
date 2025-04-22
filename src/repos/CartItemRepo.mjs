@@ -163,7 +163,7 @@ export class CartItemRepo {
      */
 
     async deleteCartItem(id) {
-        let query = 'DELETE FROM CART_ITEM WHERE id = ?';
+        const query = 'DELETE FROM CART_ITEM WHERE id = ?';
         const db = this.DB;
         return new Promise((resolve, reject) => {
             this.DB.run(query, [id], async (err) => {
@@ -174,6 +174,23 @@ export class CartItemRepo {
                     console.log('cartItem deleting succesfully');
                     let removedRepo = new RemovedRepo(db);
                     await removedRepo.deleteBagItemRemoved(id);
+                    resolve(null);
+                }
+            })
+        })
+    }
+
+
+    async deleteCartItemByBagIdUserId(bagId, userId) {
+        const query = 'DELETE FROM CART_ITEM WHERE bagId = ? AND userId = ?';
+        const db = this.DB;
+        return new Promise((resolve, reject) => {
+            this.DB.run(query, [bagId, userId], async (err) => {
+                if (err) {
+                    console.error('Error deleting cartItem: ', err.message);
+                    reject(err);
+                } else {
+                    console.log('cartItem deleting succesfully');
                     resolve(null);
                 }
             })
