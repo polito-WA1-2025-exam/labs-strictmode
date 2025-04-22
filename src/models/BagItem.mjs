@@ -5,7 +5,6 @@ export class BagItem {
      * @param {string} name
      * @param {number} quantity - Must always be greater than 0.
      * @param {string} measurementUnit - Unit of measurement for the quantity (e.g., "kg", "g", "units").
-     * @param {boolean} removed
      */
     constructor(id, bagId, name, quantity, measurementUnit) {
         this.id = id;

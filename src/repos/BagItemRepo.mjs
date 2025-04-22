@@ -85,7 +85,7 @@ export class BagItemRepo {
 
     async getBagItemListByBagItemId(id) {
         //what is CART_SINGLE_ELEMENT???????? -> BAG_ITEM?????
-        let query = 'SELECT * FROM BAG_ITEM WHERE id = ?';
+        let query = 'SELECT * FROM BAG_ITEM WHERE bagId = ?';
         return new Promise((resolve, reject) => {
             this.DB.all(query, [id], (err, rows) => {
                 if(err) {
@@ -93,8 +93,7 @@ export class BagItemRepo {
                     reject(err);
                 } else {
                     let bagItem_list = [];
-
-                    if (rows) {
+                    if (rows && rows.length > 0) {
                     rows.forEach(row => {
                         let id = parseInt(row.id, 10);
                         let bagId = parseInt(row.bagId, 10);
