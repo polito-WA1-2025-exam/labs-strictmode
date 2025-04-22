@@ -13,12 +13,15 @@ export class CartItem {
      * Creates an instance of CartItem.
      * 
      * @constructor
-     * @param {Object} bag - The bag object containing items.
+     * @param {number} id - The ID of the cart item.
+     * @param {Object} bag - The bag associated with the cart item.
+     * @param {number} userId - The ID of the user who added the bag to the cart.
      * @param {Array<string>} [removedItems=[]] - An array of item IDs to be removed from the bag.
      */
-    constructor(id, bag, removedItems = []) {
+    constructor(id, bag, userId, removedItems = []) {
         this.id = id;
         this.bag = bag;
+        this.userId = userId;
 
         this.removedItems = [];
         for (let item of removedItems) {

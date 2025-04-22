@@ -1,7 +1,7 @@
 import { BagItemRepo } from './BagItemRepo.mjs';
 
 export class RemovedRepo {
-    constructor() {
+    constructor(db) {
         this.DB = db;
     }
 
@@ -79,6 +79,7 @@ export class RemovedRepo {
      * @returns {Array<bagItem>} bagItemRemoved_list
      */
 
+    //DISCONTINUED - TO BE REMOVED LATER
     async getAllBagItemRemoved(userId) {
         let query = 'SELECT * FROM REMOVED WHERE userId = ?';
         const db = this.DB;
@@ -106,6 +107,24 @@ export class RemovedRepo {
                 }
             })
         })
+    }
+
+    //NEW FUNCTION TO GET REMOVED BAGITEMS
+    async getRemovedItems(cartItemId) {
+        //Retrieves all removed items for a given cart item.
+        const query = 'SELECT * FROM REMOVED WHERE cartItemId = ?';
+        const db = this.DB;
+        return new Promise((resolve, reject) => {
+            db.all(query, [cartItemId], (err, rows) => {
+                if (err) {
+                    console.error('Error retrieving removed items: ', err.message);
+                    reject(err);
+                } else {
+                    console.log('Removed items retrieved successfully: ', rows);
+                    resolve(rows);
+                }
+            });
+        });
     }
 
 }

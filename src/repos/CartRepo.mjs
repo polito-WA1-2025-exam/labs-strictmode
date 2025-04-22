@@ -1,4 +1,4 @@
-import Cart from '../models/index.mjs'
+import {Cart, CartItem} from '../models/index.mjs'
 import { CartItemRepo, RemovedRepo } from './index.mjs';
 
 /**
@@ -15,12 +15,15 @@ export class CartRepo {
      * @param {bagId} bagId
      * @param {CartItem} cartItem;
      */
-    async addBag(userId, bagId) {
+    async addBag(userId, bag) {
         let cartItemRepo = new CartItemRepo(this.DB);
-        let cartItem = new CartItem(bagId, userId, []);
-        cartItem = await cartItemRepo.createCartItem(cartItem, userId);
+                                   //id, bagId, userId, removedItems
+        let cartItem = new CartItem(null, bag, userId, []);
+        cartItem = await cartItemRepo.createCartItem(cartItem);
+        console.log('Cart Item created successfully: ', cartItem);
         return cartItem;
     }
+
 
     /**
      * Remove a bag from the user's cart.
@@ -37,9 +40,11 @@ export class CartRepo {
      * @param {number} userId
      * @returns {Cart}
      */
-    async getCart(userId) {
+    async getCartByUserId(userId) {
         let cartItemRepo = new CartItemRepo(this.DB);
         let cartItem_list = await cartItemRepo.getCartItemListByUserId(userId);
+
+        console.log("FUCKING CARTITEM_LIST: ", cartItem_list);
 
         let cart = new Cart(userId);
         cart.items = cartItem_list;

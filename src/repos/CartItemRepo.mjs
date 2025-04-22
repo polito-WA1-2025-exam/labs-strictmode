@@ -1,5 +1,5 @@
 import CartItem from '../models/CartItem.mjs';
-import { RemovedRepo, RemovedRepo } from './RemovedRepo.mjs';
+import { RemovedRepo, BagRepo } from './index.mjs';
 
 export class CartItemRepo {
     constructor(db) {
@@ -13,22 +13,24 @@ export class CartItemRepo {
      * @param {CartItem}  
      */
 
-    async createCartItem(cartItem, user) {
+    async createCartItem(cartItem) {
         let query = 'INSERT INTO CART_ITEM (bagId, userId) VALUES (?, ?)';
         const db = this.DB;
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [cartItem.bag.id, user.id], function (err) {
+            this.DB.run(query, [cartItem.bag.id, cartItem.userId], function (err) {
                 if (err) {
                     console.error('Error creating cartItem: ', err.message);
                     reject(err);
                 } else {
-                    console.log('Cart Item inserted succesfully: ', this.lastID);
                     cartItem.id = this.lastID;
                     let removedRepo = new RemovedRepo(db);
                     
                     cartItem.removedItems.forEach(async bagItem => {
                         await removedRepo.createRemoved(bagItem.id, cartItem.id);
                     })
+
+
+                    console.log('Cart Item inserted succesfully: ', cartItem);
                     resolve(cartItem);
                 }
             })
@@ -39,15 +41,16 @@ export class CartItemRepo {
      * @param {User} 
      */
 
-    async getCartItem(bag, user) {
+    async getCartItem(bagId, userId) {
         let query = 'SELECT * FROM CART_ITEM WHERE bagId = ? AND userId = ?';
         const db = this.DB;
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [bag.id, user.id], async function(err, row) {
+            this.DB.run(query, [bagId, userId], async function(err, row) {
                 if (err) {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
                 } else {
+                    console.log("CAZZZZZZZZ", row);
                     if (row) {
                         let id = parseInt(row[0].id, 10);
                         let bagId = parseInt(row[0].bagId, 10);
@@ -185,20 +188,48 @@ export class CartItemRepo {
     async getCartItemListByUserId(userId) {
         let query = 'SELECT * FROM CART_ITEM WHERE userId = ?';
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [userId], (err, rows) => {
+            this.DB.all(query, [userId], async (err, rows) => {
                 if (err) {
                     console.error('Error retriving all cartItems: ', err.message);
                     reject(err);
                 } else {
-                    if (rows) {
+                    if (rows && rows.length > 0) {
 
-                        cartItem_list = [];
+                        let cartItem_list = [];
 
-                        rows.forEach(async row => {
-                            let bagId = row.bagId;
-                            let cartItem = await this.getCartItem(bagId, userId);
+                        const bRepo = new BagRepo(this.DB);
+                        const removedRepo = new RemovedRepo(this.DB);
+
+                        for (const row of rows) {
+                            /*
+                            const bagId = row.bagId;
+                            const cartItem = await this.getCartItem(bagId, userId);
                             cartItem_list.push(cartItem);
-                        })
+                            */
+
+                            //cartItem has got: id, bag, userId, removedItems
+                            //id, userId I already have from the row.
+                            //I need to fetch teh bag from the corresponding bagId.
+                            const fetchedBag = await bRepo.getBagById(row.bagId);
+                            if (!fetchedBag){
+                                //ERROR: bag not found
+                                console.error("ERROR: bag not found for bagId: ", row.bagId);
+                                reject(new Error("ERROR: bag not found for bagId: ", row.bagId));
+                            }
+
+                            //for the removed items, I need to fetch the bagItemId from the removed table.
+                            const cartItemRemovedItems = await removedRepo.getRemovedItems(row.id)
+
+                            //craft the cartItem object
+                            const cartItem = new CartItem(row.id, fetchedBag, row.userId, cartItemRemovedItems);
+
+                            cartItem_list.push(cartItem);
+
+
+                        }
+
+
+                        console.log("CARTITEM_LIST: ", cartItem_list);
                         resolve(cartItem_list);
 
                     } else {
@@ -208,6 +239,9 @@ export class CartItemRepo {
             })
         })
     }
+
+
+    async 
 
     /**
      * @param {number} cartItemId

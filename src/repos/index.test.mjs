@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach } from 'vitest';
 import { createDb } from "../../database";
-import { BagRepo, UserRepo, CartRepo, ReservationRepo, EstablishmentRepo, BagItemRepo } from "../repos/index.mjs";
+import { BagRepo, UserRepo, CartRepo, ReservationRepo, EstablishmentRepo, BagItemRepo, CartItemRepo } from "../repos/index.mjs";
 import dayjs from 'dayjs';
 
 async function createTestDbRepos() {
@@ -12,6 +12,7 @@ async function createTestDbRepos() {
         resRepo: new ReservationRepo(db),
         estRepo: new EstablishmentRepo(db),
         bagItRepo: new BagItemRepo(db),
+        cartItRepo: new CartItemRepo(db),
     };
 }
 
@@ -903,4 +904,132 @@ describe('BagItemRepo', () => {
     });
 
 
+});
+
+
+//Cart Repo Testing
+describe('CartRepo', () => {
+    let establishmentRepo;
+    let bagsRepo;
+    let bagItemsRepo;
+    let usRepo;
+    let crtRepo;
+
+
+   
+
+    //since the db has the foreign key contraints that the estId referenced by the bags must exist, we create a mockup establishment
+    //alredy create also the bag
+    let newEstablishment = {
+        name: 'Test Establishment',
+        bags: [], // Initially no bags
+        estType: 'Restaurant',
+        address: '123 Test St'
+    }
+    const newBag = {
+        bagType: 'big',
+        estId: 1, //set manually 1 since in this test suite we just have the new establishment created
+        size: 'medium',
+        tags: 'gluten free, lactose free',
+        price: 10.99,
+        items: null, //items will be properly tested in the bagRepo Test Suite
+        pickupTimeStart: "2021-06-01", 
+        pickupTimeEnd: "2026-12-01",
+        available: true
+    }
+    const bagItem1 = {
+        name: 'Tomato',
+        quantity: 2,
+        measurementUnit: 'kg',
+    };
+    const bagItem2 = {
+        name: 'Lettuce',
+        quantity: 1,
+        measurementUnit: 'kg',
+    };
+    const bagItem3 = {
+        name: 'Carrot',
+        quantity: 3,
+        measurementUnit: 'kg',
+    };
+
+
+    newBag.items = [bagItem1, bagItem2, bagItem3];
+
+    const user = {
+        name: 'Test User',
+        assignedName: 'Test',
+        familyName: 'User',
+        email: 'test@example.com',
+        password: 'password123'
+    };
+
+
+    let createdEstablishment;
+    let createdBag;
+    let createdUser;
+
+    beforeEach(async () => {
+        const {userRepo, cartRepo, estRepo, bagRepo, bagItRepo} = await createTestDbRepos();
+        establishmentRepo = estRepo;
+        bagsRepo = bagRepo;
+        bagItemsRepo = bagItRepo;
+        usRepo = userRepo;
+        crtRepo = cartRepo;
+
+        //create the establishment for the tests
+        createdEstablishment = await establishmentRepo.createEstablishment(newEstablishment);
+        expect(createdEstablishment).toBeDefined();
+        expect(createdEstablishment.id).toBeDefined();
+
+
+        //create the bag
+        createdBag = await bagsRepo.createBag(newBag);
+        expect(createdBag).toBeDefined();
+        expect(createdBag.id).toBeDefined();
+        expect(createdBag.estId).toBe(createdEstablishment.id);
+        expect(createdBag.items).toBeDefined();
+        expect(createdBag.items).toHaveLength(3); // Three items added
+
+        //create the user
+        createdUser = await usRepo.createUser(user);
+        expect(createdUser).toBeDefined();
+        expect(createdUser.id).toBeDefined();
     });
+
+    test("should add a bag as cartItem and retrieve cart having the added cartItem", async () => {
+        //add createdBag to the createdUser cart
+
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+        expect(cartItem).toBeDefined();
+        expect(cartItem.id).toBeDefined();
+        //check correctness of cartItem
+        expect(cartItem.bag.id).toBe(createdBag.id); 
+        expect(cartItem.userId).toBe(createdUser.id); 
+
+        //check if the user's cart has got the cartItem
+        const cart = await crtRepo.getCartByUserId(createdUser.id);
+
+
+        expect(cart).toBeDefined();
+
+        //check if cart is correctly associated with the user
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+
+        //check if the cartItem is in the cart
+        expect(cart.items).toBeDefined();
+        expect(cart.items).toHaveLength(1); // One item added to the cart
+
+        //check if the cartItem is correct
+        expect(cart.items[0].id).toBeDefined();
+        expect(cart.items[0].id).toBe(cartItem.id); 
+        expect(cart.items[0].bag.id).toBe(cartItem.bag.id); 
+        expect(cart.items[0].userId).toBe(cartItem.userId); 
+
+
+
+    });
+
+});
+
