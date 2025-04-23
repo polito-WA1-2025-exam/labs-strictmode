@@ -694,7 +694,7 @@ describe('BagRepo', () => {
     });
 
 
-    test("should change bag availability and correctly retrieve it", async () => {
+    test("should change bag availability and correctly retrieve it (with both methods)", async () => {
 
 
         const newBag = {
@@ -725,6 +725,12 @@ describe('BagRepo', () => {
         //AVAILABILITY CHECK
         expect(fetchedBag.available).toBeDefined();
         expect(fetchedBag.available).toBe(false); // Bag should be unavailable now
+
+
+        //use the new method: checkBagAvailable(bagId)
+        const availability = await bagsRepo.checkBagAvailable(createdBag.id);
+        expect(availability).toBeDefined(); //it should not be null since the bag is defined
+        expect(availability).toBe(false); // Bag should be unavailable now
     });
 
 
@@ -1830,6 +1836,152 @@ describe('CartItemRepo', () => {
         expect(cartItemList[1].bag.id).toBe(createdCartItem2.bag.id); 
         expect(cartItemList[1].userId).toBe(createdCartItem2.userId);
     });
+
+});
+
+
+//Reservation Repo Testing
+describe('ReservationRepo', () => {
+
+    let establishmentRepo;
+    let bagsRepo;
+    let bagItemsRepo;
+    let usRepo;
+    let crtRepo;
+    let criRepo;
+    let rsRepo;
+
+
+    //since the db has the foreign key contraints that the estId referenced by the bags must exist, we create a mockup establishment
+    //alredy create also the bag
+    let newEstablishment = {
+        name: 'Test Establishment',
+        bags: [], // Initially no bags
+        estType: 'Restaurant',
+        address: '123 Test St'
+    }
+    const newBag = {
+        bagType: 'big',
+        estId: 1, //set manually 1 since in this test suite we just have the new establishment created
+        size: 'medium',
+        tags: 'gluten free, lactose free',
+        price: 10.99,
+        items: null, //items will be properly tested in the bagRepo Test Suite
+        pickupTimeStart: "2021-06-01", 
+        pickupTimeEnd: "2026-12-01",
+        available: true
+    }
+    const bagItem1 = {
+        name: 'Tomato',
+        quantity: 2,
+        measurementUnit: 'kg',
+    };
+    const bagItem2 = {
+        name: 'Lettuce',
+        quantity: 1,
+        measurementUnit: 'kg',
+    };
+    const bagItem3 = {
+        name: 'Carrot',
+        quantity: 3,
+        measurementUnit: 'kg',
+    };
+
+
+    newBag.items = [bagItem1, bagItem2, bagItem3];
+
+    const user = {
+        name: 'Test User',
+        assignedName: 'Test',
+        familyName: 'User',
+        email: 'prova@gmail.com',
+        password: 'password123'
+    };
+
+
+
+    let createdEstablishment;
+    let createdBag;
+    let createdUser;
+    let createdCartItem;
+    let userCart;
+
+    beforeEach(async () => {
+        const {userRepo, cartRepo, resRepo, estRepo, bagRepo} = await createTestDbRepos();
+        establishmentRepo = estRepo;
+        bagsRepo = bagRepo;
+        usRepo = userRepo;
+        crtRepo = cartRepo;
+        rsRepo = resRepo;
+
+        //create the establishment for the tests
+        createdEstablishment = await establishmentRepo.createEstablishment(newEstablishment);
+        expect(createdEstablishment).toBeDefined();
+        expect(createdEstablishment.id).toBeDefined();
+
+
+        //create the bag
+        createdBag = await bagsRepo.createBag(newBag);
+        expect(createdBag).toBeDefined();
+        expect(createdBag.id).toBeDefined();
+        expect(createdBag.estId).toBe(createdEstablishment.id);
+        expect(createdBag.items).toBeDefined();
+        expect(createdBag.items).toHaveLength(3); // Three items added to the bag
+
+        //create the user
+        createdUser = await usRepo.createUser(user);
+        expect(createdUser).toBeDefined();
+        expect(createdUser.id).toBeDefined();
+
+        //add bag to createdUser's cart
+        createdCartItem = await crtRepo.addBag(createdUser.id, createdBag);
+        expect(createdCartItem).toBeDefined();
+        expect(createdCartItem.id).toBeDefined();
+        expect(createdCartItem.userId).toBe(createdUser.id); // Check if the cartItem is associated with the correct user
+        expect(createdCartItem.bag.id).toBe(createdBag.id); // Check if the cartItem is associated with the correct bag
+
+        //retrieve user cart
+        userCart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(userCart).toBeDefined();
+        expect(userCart.userId).toBeDefined();
+        expect(userCart.userId).toBe(createdUser.id);
+        expect(userCart.items).toBeDefined();
+        expect(userCart.items).toHaveLength(1); // One item added to the cart
+        expect(userCart.items[0].id).toBeDefined();
+        expect(userCart.items[0].id).toBe(createdCartItem.id);
+
+    });
+
+
+    test("should create a reservation and correctly retrieve it", async () => {
+        //create the reservation
+        //constructor(id, userId, cartItem, createdAt) {
+        const dateRef = dayjs().format('YYYY-MM-DD'); // Use current date for createdAt
+        const reserv = {
+            userId: createdUser.id,
+            cartItem: createdCartItem,
+            createdAt: dateRef
+        }
+
+        const createdReservation = await rsRepo.createReservation(reserv);
+        expect(createdReservation).toBeDefined();
+        expect(createdReservation.id).toBeDefined();
+        expect(createdReservation.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
+        expect(createdReservation.cartItem.id).toBe(createdCartItem.id); // Check if the reservation is associated with the correct cartItem
+
+
+        //now attempt to retrieve the reservation by cartItemId
+        const fetchedReservation = await rsRepo.getReservationByCartItemId(createdCartItem.id);
+        console.log("FETCHED RESERVATION: ", fetchedReservation);
+        expect(fetchedReservation).toBeDefined();
+        expect(fetchedReservation.id).toBeDefined();
+        expect(fetchedReservation.userId).toBe(createdUser.id); 
+        expect(fetchedReservation.cartItem.id).toBe(createdCartItem.id); 
+        expect(fetchedReservation.cartItem.bag.id).toBe(createdBag.id); 
+        expect(fetchedReservation.createdAt).toBeDefined();
+        expect(fetchedReservation.createdAt.isSame(dayjs(dateRef, 'YYYY-MM-DD'), 'day')).toBe(true); 
+    });
+
 
 });
 

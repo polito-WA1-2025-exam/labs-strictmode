@@ -2,9 +2,9 @@ import dayjs from 'dayjs';
 import Bag from './Bag.mjs';
 
 export class Reservation {
-    constructor(id, user, cartItem, createdAt) {
+    constructor(id, userId, cartItem, createdAt) {
         this.id = id;
-        this.user = user;
+        this.userId = userId;
         this.createdAt = createdAt;
         this.cartItem = cartItem;
         this.canceledAt = null;    

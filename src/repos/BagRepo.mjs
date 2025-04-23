@@ -264,6 +264,27 @@ export class BagRepo {
             })
         })
     }
+
+
+    async checkBagAvailable(bagId){
+        const query = 'SELECT available FROM BAG WHERE id = ?';
+        return new Promise((resolve, reject) => {
+            this.DB.get(query, [bagId], (err, row) => {
+                if (err) {
+                    console.error('Error checking bag availability: ', err.message);
+                    reject(err);
+                } else {
+                    //this returns eithr true or false if the row is defined
+                    //otherwise it returns null
+                    if (row){
+                        resolve(row.available === 1); // Convert to boolean
+                    } else {
+                        resolve(null); // No such bag found
+                    }
+                }
+            });
+        });
+    }
     
 
     /**

@@ -101,9 +101,11 @@ export function createDb(dbPath) {
         // Since for each cartItem ordered there is only 1 reservation, the reservation has cartItemId as a PRIMARY KEY.
         // Create RESERVATION table
         db.run(`CREATE TABLE IF NOT EXISTS RESERVATION (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
           cartItemId INTEGER,
+          userId INTEGER,
           createdAt DATE,
-          canceledAt DATE NULL,
+          canceledAt DATE NULL DEFAULT NULL,
           FOREIGN KEY (cartItemId) REFERENCES CART_ITEM(id)
         )`, handleError);
 
