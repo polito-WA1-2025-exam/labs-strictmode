@@ -18,18 +18,45 @@ export class CartItem {
      * @param {number} userId - The ID of the user who added the bag to the cart.
      * @param {Array<string>} [removedItems=[]] - An array of item IDs to be removed from the bag.
      */
-    constructor(id, bag, userId, removedItems = []) {
+    constructor(id, bag, userId, removed = []) {
         this.id = id;
         this.bag = bag;
         this.userId = userId;
 
         this.removedItems = [];
-        for (let item of removedItems) {
+
+        if (removed.length > 0){
+
+            //also here check if contraints are satisfied:
+            if (this.bag.bagType !== Bag.TYPE_REGULAR) throw new Error('A non-regular bag cannot be personalized');
+            if (removed.length > 2) throw new Error('Cannot remove more than 2 items');
+
+
+            //check first that the ids in removed are actually in the bag:
+            for (const itemToBeRemoved of removed) {
+                //check cartItemId is the same as the right cartItem
+                if (itemToBeRemoved.cartItemId !== this.id) {
+                    throw new Error(`Wrong cartItemID`);
+                }
+                if (!this.bag.items.some(bagItem => bagItem.id === itemToBeRemoved.bagItemId)) {
+                    throw new Error(`Item with ID ${itemToBeRemoved.bagItemId} is not in the bag`);
+                }
+            }
+
+            this.removedItems = removed.map(item => item.bagItemId);
+        }
+
+        /*
+        for (let item of removed) {
             console.log("Adding item to removedItems: ", item);
             this.removeItem(item.bagItemId);
         }
+        */
 
         this.addedAt = dayjs(); // Track cart addition time
+
+
+        console.log("FINAL CART ITEM + REMOVED: ", this);
     }
 
     /**
@@ -51,9 +78,7 @@ export class CartItem {
         if (this.bag.items.some(item => item.itemId === itemId)) {
             this.removedItems = [...new Set([...this.removedItems, itemId])];
             console.log("Removed items: ", this.removedItems);
-        } else {
-            throw new Error('Item not found in bag');
-        }
+        } 
     }
 }
 

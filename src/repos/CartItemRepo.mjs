@@ -247,6 +247,7 @@ export class CartItemRepo {
 
                             //for the removed items, I need to fetch the bagItemId from the removed table.
                             const cartItemRemovedItems = await removedRepo.getRemovedItems(row.id)
+                            
 
                             //craft the cartItem object
                             const cartItem = new CartItem(row.id, fetchedBag, row.userId, cartItemRemovedItems);

@@ -2,6 +2,7 @@ import { describe, expect, test, beforeEach } from 'vitest';
 import { createDb } from "../../database";
 import { BagRepo, UserRepo, CartRepo, ReservationRepo, EstablishmentRepo, BagItemRepo, CartItemRepo } from "../repos/index.mjs";
 import dayjs from 'dayjs';
+import e from 'express';
 
 async function createTestDbRepos() {
     let db = await createDb(":memory:");
@@ -1247,12 +1248,16 @@ describe('CartRepo', () => {
         expect(cart.items).toHaveLength(1); // One item added to the cart
         expect(cart.items[0].id).toBeDefined();
         expect(cart.items[0].id).toBe(cartItem.id);
+        expect(cart.items[0].bag.id).toBe(cartItem.bag.id);
+        expect(cart.items[0].userId).toBe(cartItem.userId);
+        expect(cart.items[0].bag.items).toBeDefined();
+        expect(cart.items[0].bag.items).toHaveLength(3); // Three items added to the cartItem
 
 
         //remove bagItem3 - Lettuce - of createdBag from the cart of user createdUser
         //after this the cartItem should have 2 items (bagItems) left
 
-        /*
+        
         const removedItems = await crtRepo.personalizeBag(createdUser.id, createdBag.id, [2]); 
         
         //check now cartItem has just zero items
@@ -1262,8 +1267,151 @@ describe('CartRepo', () => {
         expect(cart.userId).toBe(createdUser.id);
         //check if the cartItem is in the cart
         expect(cart.items).toBeDefined();
-        expect(cart.items).toHaveLength(0); // One item added to the car
-        */
+        expect(cart.items).toHaveLength(1); // One cartItem in the cart
+        expect(cart.items[0].id).toBeDefined();
+        expect(cart.items[0].id).toBe(cartItem.id);
+        expect(cart.items[0].bag.id).toBe(cartItem.bag.id);
+        expect(cart.items[0].userId).toBe(cartItem.userId);
+
+        //check if the bagItem whose index is 2 was correctly removed from the cartItem
+        expect(cart.items[0].removedItems).toBeDefined();
+        expect(cart.items[0].removedItems).toHaveLength(1); // One item removed from the cartItem
+        expect(cart.items[0].removedItems[0]).toBeDefined();
+        expect(cart.items[0].removedItems[0]).toBe(2)
+
+
+    });
+
+
+    test("should not be able to personalize not regular bags", async () => {
+        const surpriseBag = {
+            bagType: 'surprise',
+            estId: 1, //set manually 1 since in this test suite we just have the new establishment created
+            size: 'medium',
+            tags: 'gluten free, lactose free',
+            price: 10.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: true
+        }
+
+        const bagItem1 = {
+            name: 'Tomato',
+            quantity: 2,
+            measurementUnit: 'kg',
+        };
+
+        surpriseBag.items = [bagItem1];
+
+        //add bag
+        const createdSurpriseBag = await bagsRepo.createBag(surpriseBag);
+        expect(createdSurpriseBag).toBeDefined();
+        expect(createdSurpriseBag.id).toBeDefined();
+        expect(createdSurpriseBag.estId).toBe(createdEstablishment.id);
+        //SURPRISE BAG CHECK
+        expect(createdSurpriseBag.bagType).toBe(surpriseBag.bagType); // Check if the bagType is 'surprise'
+        expect(createdSurpriseBag.items).toBeDefined();
+        expect(createdSurpriseBag.items).toHaveLength(1); // One item added to the bag
+
+        //add bag to cart
+        const cartItem = await crtRepo.addBag(createdUser.id, createdSurpriseBag);
+        expect(cartItem).toBeDefined();
+        expect(cartItem.id).toBeDefined();
+        expect(cartItem.bag.id).toBe(createdSurpriseBag.id);
+        expect(cartItem.bag.bagType).toBe(createdSurpriseBag.bagType); // Check if the bagType is 'surprise'
+
+        //try to remove the bagItem from the cartItem
+        //it's expected an error to be thrown since the bagType is not 'regular'
+        //expected throw: "A non-regular bag cannot be personalized"
+        await expect(crtRepo.personalizeBag(createdUser.id, createdSurpriseBag.id, [0])).rejects.toThrow("A non-regular bag cannot be personalized");
+    });
+
+    test("should not be able to remove > 2 items for regular bags - all in one removal", async () => {
+
+        //createdBag is already a regular bag having 3 items
+        //try to remove all of the three items from the cartItem all in once and expect an error to be thrown
+
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+        expect(cartItem).toBeDefined();
+        expect(cartItem.id).toBeDefined();
+        //check correctness of cartItem
+        expect(cartItem.bag.id).toBe(createdBag.id); 
+        expect(cartItem.userId).toBe(createdUser.id); 
+        //check it has 3 items
+        expect(cartItem.bag.items).toBeDefined();
+        expect(cartItem.bag.items).toHaveLength(3); // Three items added to the cartItem
+
+
+        //REMOVE ALL THE ITEMS FROM THE CARTITEM
+        await expect(crtRepo.personalizeBag(createdUser.id, createdBag.id, [0, 1, 2])).rejects.toThrow("Cannot remove more than 2 items from the bag!");
+    });
+
+
+    test("should not be able to remove > 2 items for regular bags - one by one removal", async () => {
+        //in this case we try to remove 3 items one by one, so we expect an error to be thrown anyway
+        //createdBag is already a regular bag having 3 items
+
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+        expect(cartItem).toBeDefined();
+        expect(cartItem.id).toBeDefined();
+        //check correctness of cartItem
+        expect(cartItem.bag.id).toBe(createdBag.id); 
+        expect(cartItem.userId).toBe(createdUser.id); 
+        //check it has 3 items
+        expect(cartItem.bag.items).toBeDefined();
+        expect(cartItem.bag.items).toHaveLength(3); // Three items added to the cartItem
+
+
+        //1. remove bagItem 0 -> removedItems ha length 1 -> no errors to be thrown
+        await crtRepo.personalizeBag(createdUser.id, createdBag.id, [1]);
+
+        //check now cartItem has just 1 item in the removedItems array
+        let cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+        expect(cart.items).toBeDefined();
+        expect(cart.items).toHaveLength(1); // One cartItem in the cart
+        expect(cart.items[0].removedItems).toBeDefined();
+        expect(cart.items[0].removedItems).toHaveLength(1); // One item removed from the cartItem
+        expect(cart.items[0].removedItems[0]).toBeDefined();
+        expect(cart.items[0].removedItems[0]).toBe(1)
+
+
+        //2. remove bagItem 1 -> removedItems ha length 2 -> no errors to be thrown
+        await crtRepo.personalizeBag(createdUser.id, createdBag.id, [2]);
+
+        //check now cartItem has just 2 ite2 in the removedItems array
+        cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+        expect(cart.items).toBeDefined();
+        expect(cart.items).toHaveLength(1); // One cartItem in the cart
+        expect(cart.items[0].removedItems).toBeDefined();
+        expect(cart.items[0].removedItems).toHaveLength(2); // One item removed from the cartItem
+        expect(cart.items[0].removedItems[0]).toBeDefined();
+        expect(cart.items[0].removedItems[0]).toBe(1)
+        expect(cart.items[0].removedItems[1]).toBeDefined();
+        expect(cart.items[0].removedItems[1]).toBe(2)
+
+
+        //3. remove bagItem 2 -> removedItems ha length 3 -> EXPECT AN ERROR TO BE THROWN
+        await expect(crtRepo.personalizeBag(createdUser.id, createdBag.id, [0])).rejects.toThrow("Cannot remove more than 2 items from the bag!");
+        //check still 2 and NOT 3 items in the removedItems array
+        cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+        expect(cart.items).toBeDefined();
+        expect(cart.items).toHaveLength(1); // One cartItem in the cart
+        expect(cart.items[0].removedItems).toBeDefined();
+        expect(cart.items[0].removedItems).toHaveLength(2); // One item removed from the cartItem
+        expect(cart.items[0].removedItems[0]).toBeDefined();
+        expect(cart.items[0].removedItems[0]).toBe(1)
+        expect(cart.items[0].removedItems[1]).toBeDefined();
+        expect(cart.items[0].removedItems[1]).toBe(2)
     });
 
 });

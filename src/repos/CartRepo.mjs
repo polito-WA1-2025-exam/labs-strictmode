@@ -73,7 +73,18 @@ export class CartRepo {
         * No items can be removed from a surprise bag.
         */
         if (cartItem.bag.bagType !== Bag.TYPE_REGULAR) throw new Error('A non-regular bag cannot be personalized');
-        if (removedItems.length > 2) throw new Error('Cannot remove more than 2 items');
+        //this is the check for wether the user attempts to remove items all in once:
+        if (removedItems.length > 2) throw new Error('Cannot remove more than 2 items from the bag!');
+        //but we also have to check wether the cartItem has already < 2 removed Items and the user tries to remove more:
+        if (cartItem.removedItems.length + removedItems.length > 2) throw new Error('Cannot remove more than 2 items from the bag!');
+
+        //also check that the bagItems ids in removed are actually in the bag:
+        for (const bagItemIdToRemove of removedItems) {
+            //check the cartItem actually contains the item to be removed
+            if (!cartItem.bag.items.some(bagItem => bagItem.id === bagItemIdToRemove)) {
+                throw new Error(`Item with ID ${bagItemIdToRemove} is not in the bag`);
+            }
+        }
 
         //if the contraints are satisfied, update the removed items in the cartItem
         let removedRepo = new RemovedRepo(this.DB);
