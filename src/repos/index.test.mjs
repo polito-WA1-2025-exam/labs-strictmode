@@ -1457,3 +1457,252 @@ describe('CartRepo', () => {
 
 });
 
+
+//Cart Item Repo Testing
+describe('CartItemRepo', () => {
+    let establishmentRepo;
+    let bagsRepo;
+    let bagItemsRepo;
+    let usRepo;
+    let crtRepo;
+    let criRepo;
+
+
+    //since the db has the foreign key contraints that the estId referenced by the bags must exist, we create a mockup establishment
+    //alredy create also the bag
+    let newEstablishment = {
+        name: 'Test Establishment',
+        bags: [], // Initially no bags
+        estType: 'Restaurant',
+        address: '123 Test St'
+    }
+    const newBag = {
+        bagType: 'big',
+        estId: 1, //set manually 1 since in this test suite we just have the new establishment created
+        size: 'medium',
+        tags: 'gluten free, lactose free',
+        price: 10.99,
+        items: null, //items will be properly tested in the bagRepo Test Suite
+        pickupTimeStart: "2021-06-01", 
+        pickupTimeEnd: "2026-12-01",
+        available: true
+    }
+    const bagItem1 = {
+        name: 'Tomato',
+        quantity: 2,
+        measurementUnit: 'kg',
+    };
+    const bagItem2 = {
+        name: 'Lettuce',
+        quantity: 1,
+        measurementUnit: 'kg',
+    };
+    const bagItem3 = {
+        name: 'Carrot',
+        quantity: 3,
+        measurementUnit: 'kg',
+    };
+
+
+    newBag.items = [bagItem1, bagItem2, bagItem3];
+
+    const user = {
+        name: 'Test User',
+        assignedName: 'Test',
+        familyName: 'User',
+        email: 'prova@gmail.com',
+        password: 'password123'
+    };
+
+
+
+    let createdEstablishment;
+    let createdBag;
+    let createdUser;
+    let createdCartItem;
+
+    beforeEach(async () => {
+        const {userRepo, cartRepo, estRepo, bagRepo, bagItRepo, cartItRepo} = await createTestDbRepos();
+        establishmentRepo = estRepo;
+        bagsRepo = bagRepo;
+        bagItemsRepo = bagItRepo;
+        usRepo = userRepo;
+        crtRepo = cartRepo;
+        criRepo = cartItRepo;
+
+        //create the establishment for the tests
+        createdEstablishment = await establishmentRepo.createEstablishment(newEstablishment);
+        expect(createdEstablishment).toBeDefined();
+        expect(createdEstablishment.id).toBeDefined();
+
+
+        //create the bag
+        createdBag = await bagsRepo.createBag(newBag);
+        expect(createdBag).toBeDefined();
+        expect(createdBag.id).toBeDefined();
+        expect(createdBag.estId).toBe(createdEstablishment.id);
+        expect(createdBag.items).toBeDefined();
+        expect(createdBag.items).toHaveLength(3); // Three items added to the bag
+
+        //create the user
+        createdUser = await usRepo.createUser(user);
+        expect(createdUser).toBeDefined();
+        expect(createdUser.id).toBeDefined();
+
+        //create tha cartItem for the user createdUser
+         //cart item
+        const newcartItem = {
+            userId: createdUser.id,
+            bag: createdBag,
+            removedItems: [] // Initially no items removed
+        };
+
+        createdCartItem = await criRepo.createCartItem(newcartItem);
+        expect(createdCartItem).toBeDefined();
+        expect(createdCartItem.id).toBeDefined();
+        expect(createdCartItem.userId).toBe(createdUser.id); // Check if the cartItem is associated with the correct user
+        expect(createdCartItem.bag.id).toBe(createdBag.id); // Check if the cartItem is associated with the correct bag
+
+
+    });
+
+    test("should retrieve cartItem by its id", async () => {
+
+        //retrieve the cartItem by id
+        
+        const cartItemRetrieved = await criRepo.getCartItemById(createdCartItem.id); 
+        console.log("CART ITEM RETRIEVED: ", cartItemRetrieved);
+        //check if it's correct
+        expect(cartItemRetrieved).toBeDefined();
+        expect(cartItemRetrieved.id).toBe(createdCartItem.id);
+        expect(cartItemRetrieved.userId).toBe(createdCartItem.userId);
+        expect(cartItemRetrieved.bag.id).toBe(createdCartItem.bag.id); // Check if the bag ID is correct
+        expect(cartItemRetrieved.bag.items).toBeDefined();
+        expect(cartItemRetrieved.bag.items).toHaveLength(3); // Three items added to the cartItem
+    });
+
+
+    test("should get userId by cartItemId", async () => {
+
+        const fetchedUserId = await criRepo.getUserIdByCartItemId(createdCartItem.id);
+        expect(fetchedUserId).toBeDefined();
+        expect(fetchedUserId).toBe(createdCartItem.userId); 
+        expect(fetchedUserId).toBe(createdUser.id); 
+    });
+
+    test("should properly delete a cartItem by its id", async () => {
+
+        //delete the cartItem by id
+        const res = await criRepo.deleteCartItem(createdCartItem.id); 
+        //res needs to be null
+        expect(res).toBeNull(); 
+
+        //try to retrieve the deleted cartItem by id
+        const cartItemRetrieved = await criRepo.getCartItemById(createdCartItem.id); 
+        expect(cartItemRetrieved).toBeNull(); // Expect null for non-existent cart item
+
+    });
+
+
+    test("should handle deletion of non-existent cartItem", async () => {
+        // Try to delete a cartItem with an ID that doesn't exist
+        const nonExistingCartItemId = 99999;
+        const res = await criRepo.deleteCartItem(nonExistingCartItemId); 
+        expect(res).toBeNull(); 
+    });
+
+
+    test("should delete a cartItem by bagId and userId", async () => {
+
+        //delete the cartItem by bagId and userId
+        const res = await criRepo.deleteCartItemByBagIdUserId(createdBag.id, createdUser.id); 
+        //res needs to be null
+        expect(res).toBeNull(); 
+
+        //try to retrieve the deleted cartItem by id
+        const cartItemRetrieved = await criRepo.getCartItemById(createdCartItem.id); 
+        expect(cartItemRetrieved).toBeNull(); // Expect null for non-existent cart item
+
+    });
+
+
+    test("should get the cart Item List by userId", async () => {
+
+        //check if the user's cart has got the cartItem
+        let cartItemList = await criRepo.getCartItemListByUserId(createdUser.id);
+
+
+        expect(cartItemList).toBeDefined();
+        expect(cartItemList).toHaveLength(1); // One item added to the cart
+
+        //check if cart is correctly associated with the user
+        expect(cartItemList[0].userId).toBeDefined();
+        expect(cartItemList[0].userId).toBe(createdUser.id);
+
+        //check if the cartItem is in the cart
+        expect(cartItemList[0].id).toBeDefined();
+        expect(cartItemList[0].id).toBe(createdCartItem.id); 
+        expect(cartItemList[0].bag.id).toBe(createdCartItem.bag.id); 
+        expect(cartItemList[0].userId).toBe(createdCartItem.userId);
+
+
+        //now add another cartItem to the user createdUser
+
+        const newBag2 = {
+            bagType: 'regular',
+            estId: 1, //set manually 1 since in this test suite we just have the new establishment created
+            size: 'large',
+            tags: '/',
+            price: 20.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: true
+        }
+
+        //create the bag
+        const createdBag2 = await bagsRepo.createBag(newBag2);
+        expect(createdBag2).toBeDefined();
+        expect(createdBag2.id).toBeDefined();
+        expect(createdBag2.estId).toBe(createdEstablishment.id);
+
+        const newcartItem2 =
+        {
+            userId: createdUser.id,
+            bag: createdBag2,
+            removedItems: [] // Initially no items removed
+        };
+
+        const createdCartItem2 = await criRepo.createCartItem(newcartItem2);
+        expect(createdCartItem2).toBeDefined();
+        expect(createdCartItem2.id).toBeDefined();
+        expect(createdCartItem2.userId).toBe(createdUser.id); 
+        expect(createdCartItem2.bag.id).toBe(createdBag2.id); 
+
+
+        //retrieve again the cartItemList by userId
+        cartItemList = await criRepo.getCartItemListByUserId(createdUser.id);
+        expect(cartItemList).toBeDefined();
+        expect(cartItemList).toHaveLength(2); // Two items added to the cart
+        //check if cart is correctly associated with the user
+        expect(cartItemList[0].userId).toBeDefined();
+        expect(cartItemList[0].userId).toBe(createdUser.id);
+
+        //check if the cartItem is in the cart
+        expect(cartItemList[0].id).toBeDefined();
+        expect(cartItemList[0].id).toBe(createdCartItem.id); 
+        expect(cartItemList[0].bag.id).toBe(createdCartItem.bag.id); 
+        expect(cartItemList[0].userId).toBe(createdCartItem.userId);
+
+        //check if cart is correctly associated with the user
+        expect(cartItemList[1].userId).toBeDefined();
+        expect(cartItemList[1].userId).toBe(createdUser.id);
+
+        //check if the cartItem is in the cart
+        expect(cartItemList[1].id).toBeDefined();
+        expect(cartItemList[1].id).toBe(createdCartItem2.id); 
+        expect(cartItemList[1].bag.id).toBe(createdCartItem2.bag.id); 
+        expect(cartItemList[1].userId).toBe(createdCartItem2.userId);
+    });
+
+});

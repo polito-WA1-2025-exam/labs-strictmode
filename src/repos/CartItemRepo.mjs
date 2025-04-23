@@ -85,7 +85,6 @@ export class CartItemRepo {
                         //fetch bag
                         const bagRepo = new BagRepo(db);
                         const fetchedBag = await bagRepo.getBagById(bagId);
-                        //console.log("ECCOLAAAAAA BAG: ", fetchedBag);
                         if (!fetchedBag){
                             //ERROR: bag not found
                             console.error("ERROR: bag not found for bagId: ", bagId);
@@ -117,19 +116,31 @@ export class CartItemRepo {
         let query = 'SELECT * FROM CART_ITEM WHERE id = ?';
         const db = this.DB;
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [id], async (err, row) => {
+            this.DB.all(query, [id], async (err, row) => {
                 if (err) {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
                 } else {
-                    if (row) {
+                    console.log("ROW: ", row);
+                    if (row && row.length > 0) {
                         let id = parseInt(row[0].id, 10);
                         let bagId = parseInt(row[0].bagId, 10);
                         let userId = parseInt(row[0].userId, 10);
 
-                        let fetchedCartItem = new CartItem(id, bagId, null);
+
+                        //fetch bag
+                        const bagRepo = new BagRepo(db);
+                        const fetchedBag = await bagRepo.getBagById(bagId);
+                        if (!fetchedBag){
+                            //ERROR: bag not found
+                            console.error("ERROR: bag not found for bagId: ", bagId);
+                            reject(new Error("ERROR: bag not found for bagId: ", bagId));
+                        }
+
+                        //                                id, bag, userId, removed = []
+                        let fetchedCartItem = new CartItem(id, fetchedBag, userId);
                         let removedRepo = new RemovedRepo(db);
-                        let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
+                        let bagItemRemoved_list = await removedRepo.getRemovedItems(id);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
                         resolve(fetchedCartItem);
                     } else {
@@ -269,7 +280,6 @@ export class CartItemRepo {
     }
 
 
-    async 
 
     /**
      * @param {number} cartItemId

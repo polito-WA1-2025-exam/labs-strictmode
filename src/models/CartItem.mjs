@@ -38,6 +38,8 @@ export class CartItem {
                 if (itemToBeRemoved.cartItemId !== this.id) {
                     throw new Error(`Wrong cartItemID`);
                 }
+
+                console.log("ITEM TO BE REMOVED: ", itemToBeRemoved);
                 if (!this.bag.items.some(bagItem => bagItem.id === itemToBeRemoved.bagItemId)) {
                     throw new Error(`Item with ID ${itemToBeRemoved.bagItemId} is not in the bag`);
                 }
@@ -56,7 +58,7 @@ export class CartItem {
         this.addedAt = dayjs(); // Track cart addition time
 
 
-        console.log("FINAL CART ITEM + REMOVED: ", this);
+        //console.log("FINAL CART ITEM + REMOVED: ", this);
     }
 
     /**
