@@ -1414,5 +1414,46 @@ describe('CartRepo', () => {
         expect(cart.items[0].removedItems[1]).toBe(2)
     });
 
+
+    test("should not remove unexisting bagItem from the cartItem", async () => {
+        //createdBag is already a regular bag having 3 items
+
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+        expect(cartItem).toBeDefined();
+        expect(cartItem.id).toBeDefined();
+        //check correctness of cartItem
+        expect(cartItem.bag.id).toBe(createdBag.id); 
+        expect(cartItem.userId).toBe(createdUser.id); 
+        //check it has 3 items
+        expect(cartItem.bag.items).toBeDefined();
+        expect(cartItem.bag.items).toHaveLength(3); // Three items added to the cartItem
+
+
+        //try to remove a non-existent bagItem from the cartItem
+        //error: Item with ID 9999 is not in the bag
+        const unexistingId = 9999; 
+        await expect(crtRepo.personalizeBag(createdUser.id, createdBag.id, [unexistingId])).rejects.toThrow(`Item with ID ${unexistingId} is not in the bag`);
+    });
+
+    test("should handle case where passed array of bag Items to be removed is empty or null", async () => {
+        //createdBag is already a regular bag having 3 items
+
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+        expect(cartItem).toBeDefined();
+        expect(cartItem.id).toBeDefined();
+        //check correctness of cartItem
+        expect(cartItem.bag.id).toBe(createdBag.id); 
+        expect(cartItem.userId).toBe(createdUser.id); 
+        //check it has 3 items
+        expect(cartItem.bag.items).toBeDefined();
+        expect(cartItem.bag.items).toHaveLength(3); // Three items added to the cartItem
+
+        await expect(crtRepo.personalizeBag(createdUser.id, createdBag.id, [])).rejects.toThrow(`You must specify at least one item to remove`);
+
+
+        //now try with null
+        await expect(crtRepo.personalizeBag(createdUser.id, createdBag.id, null)).rejects.toThrow(`You must specify at least one item to remove`);
+    });
+
 });
 

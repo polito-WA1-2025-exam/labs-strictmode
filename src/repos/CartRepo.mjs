@@ -63,6 +63,9 @@ export class CartRepo {
     // removedItems -> it might be saved as a string in the DB. THe string contains IDs of bag Items 
 
     async personalizeBag(userId, bagId, removedItems) {
+
+        //if removedItems is either null or empty, throw an error:
+        if (removedItems === null || removedItems.length === 0) throw new Error('You must specify at least one item to remove');
         let cartItemRepo = new CartItemRepo(this.DB);
         let cartItem = await cartItemRepo.getCartItemByBagIdUserID(bagId, userId);
 
