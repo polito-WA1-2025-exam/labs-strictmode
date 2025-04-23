@@ -83,6 +83,7 @@ export function createDb(dbPath) {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           bagId INTEGER,
           userId INTEGER,
+          addedAt DATE NULL,
           FOREIGN KEY (bagId) REFERENCES BAG (id),
           FOREIGN KEY (userId) REFERENCES USER (id)
         )`, handleError);
@@ -108,6 +109,7 @@ export function createDb(dbPath) {
 
         // Create index to improve performance
         db.run(`CREATE INDEX IF NOT EXISTS idx_bag_item_bagid ON BAG_ITEM(bagId)`, handleError);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_cart_item_bagid ON CART_ITEM(bagId)`, handleError);
 
         console.log("Trying to commit...");
         // Commit the transaction

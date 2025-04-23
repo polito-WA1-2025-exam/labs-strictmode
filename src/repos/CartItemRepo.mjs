@@ -14,10 +14,43 @@ export class CartItemRepo {
      */
 
     async createCartItem(cartItem) {
-        let query = 'INSERT INTO CART_ITEM (bagId, userId) VALUES (?, ?)';
+
+        //CONTRAINT: 
+        //Each authenticated user can add to the shopping cart just one bag per establishment within the
+        //same day to ensure fairness and allow more users to benefit from the program
+
+        //so, first of all, see if the user has already added a bag from the same establishment today.
+        //if yes, then throw an error.
+
+        const cartItemListUser = await this.getCartItemListByUserId(cartItem.userId);
+
+        //check if the user has already added a bag from the same establishment today
+        //ofc if the cart of the user is empty, then cartItemListUser will be null or empty.
+        //so it's useless to make this check in that case.
+        if (cartItemListUser && cartItemListUser.length > 0) {
+
+            const establishmentToBeChecked = cartItem.bag.estId;
+
+            //iterate through each bag of the cartItemListUser and check if the establishment is the same
+            for (const cartItemUser of cartItemListUser) {
+
+                if (cartItemUser.bag.estId === establishmentToBeChecked) {
+                    //compare the two daysjs objects and check if the DAY (in the sense YYYY-MM-DD) is the same
+                    if (cartItemUser.addedAt && cartItem.addedAt && cartItemUser.addedAt.isSame(cartItem.addedAt, 'day')) {
+                        //throw an error: the user has already added a bag from the same establishment today
+                        throw new Error('You have already added a bag from this establishment today. Please try again tomorrow.');
+                    }
+                }
+            }
+        }
+
+        //AFTER THIS CHECK, I CAN PROCEED TO INSERT THE CART ITEM IN THE DB.
+
+
+        let query = 'INSERT INTO CART_ITEM (bagId, userId, addedAt) VALUES (?, ?, ?)';
         const db = this.DB;
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [cartItem.bag.id, cartItem.userId], function (err) {
+            this.DB.run(query, [cartItem.bag.id, cartItem.userId, cartItem.addedAt], function (err) {
                 if (err) {
                     console.error('Error creating cartItem: ', err.message);
                     reject(err);
@@ -232,6 +265,7 @@ export class CartItemRepo {
                     console.error('Error retriving all cartItems: ', err.message);
                     reject(err);
                 } else {
+                    console.log("CAZZOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO: ", rows);
                     if (rows && rows.length > 0) {
 
                         let cartItem_list = [];

@@ -1120,9 +1120,25 @@ describe('CartRepo', () => {
     test("should handle multiple cartItems into one cart", async () => {
 
         //create a second bag
+        //SINCE WE HAVE THE CONSTRAINT THAT THE USER CANNOT ADD > 1 BAG FROM THE SAME ESTABLISHMENT, we create a second bag from ANOTHER ESTABLISHMENT
+        //also mind that the key contraint on estId must is enforced by the db, so we create a new establishment first
+
+        const newEst2 = {
+            name: 'Test Establishment2',
+            bags: [], // Initially no bags
+            estType: 'Slow Food',
+            address: '127 Ace Ave'
+        }
+
+        const createdEstablishment2 = await establishmentRepo.createEstablishment(newEst2);
+        expect(createdEstablishment2).toBeDefined();
+        expect(createdEstablishment2.id).toBeDefined();
+        expect(createdEstablishment2.id).toBeGreaterThan(createdEstablishment.id); // Check if the new establishment has a different ID
+        expect(createdEstablishment2.id).toBe(2);
+
         const newBag2 = {
-            bagType: 'big',
-            estId: createdEstablishment.id,
+            bagType: 'regular',
+            estId: createdEstablishment2.id,
             size: 'large',
             tags: 'high protein, low carb',
             price: 10.99,
@@ -1143,7 +1159,7 @@ describe('CartRepo', () => {
         const createdBag2 = await bagsRepo.createBag(newBag2);
         expect(createdBag2).toBeDefined();
         expect(createdBag2.id).toBeDefined();
-        expect(createdBag2.estId).toBe(createdEstablishment.id);
+        expect(createdBag2.estId).toBe(createdEstablishment2.id);
         expect(createdBag2.items).toBeDefined();
         expect(createdBag2.items).toHaveLength(1); // just 1 item added
 
@@ -1151,7 +1167,10 @@ describe('CartRepo', () => {
         //add createdBag to the cart of user createdUser
         const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
 
+
+        console.log("LA QUIETE DOPO LA TEMPESTA: ", cartItem);
         //add createdBag2 to the cart of user createdUser
+        //EXPECT ERROR
         const cartItem2 = await crtRepo.addBag(createdUser.id, createdBag2);
 
         //retrieve the cart of user createdUser
@@ -1174,6 +1193,113 @@ describe('CartRepo', () => {
         expect(cart.items[1].id).toBe(cartItem2.id);
         expect(cart.items[1].bag.id).toBe(cartItem2.bag.id);
         expect(cart.items[1].userId).toBe(cartItem2.userId);
+
+    });
+
+    test("should be able to add bags of different establishments on the same day", async () => {
+
+        const newEst2 = {
+            name: 'Test Establishment2',
+            bags: [], // Initially no bags
+            estType: 'Slow Food',
+            address: '127 Ace Ave'
+        }
+
+        const createdEstablishment2 = await establishmentRepo.createEstablishment(newEst2);
+        expect(createdEstablishment2).toBeDefined();
+        expect(createdEstablishment2.id).toBeDefined();
+        expect(createdEstablishment2.id).toBeGreaterThan(createdEstablishment.id); // Check if the new establishment has a different ID
+        expect(createdEstablishment2.id).toBe(2);
+
+        const newBag2 = {
+            bagType: 'regular',
+            estId: createdEstablishment2.id,
+            size: 'large',
+            tags: 'high protein, low carb',
+            price: 10.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: true
+        }
+        const bagItem4 = {
+            name: 'Potato',
+            quantity: 2,
+            measurementUnit: 'kg',
+        };
+
+        newBag2.items = [bagItem4];
+
+        //add the second bag
+        const createdBag2 = await bagsRepo.createBag(newBag2);
+        expect(createdBag2).toBeDefined();
+        expect(createdBag2.id).toBeDefined();
+        expect(createdBag2.estId).toBe(createdEstablishment2.id);
+        expect(createdBag2.items).toBeDefined();
+        expect(createdBag2.items).toHaveLength(1); // just 1 item added
+
+
+        //add createdbag
+
+        //expect no error 
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+
+
+        //add createdBag2 to the cart of user createdUser
+        //no error since the establishment is different
+        const cartItem2 = await crtRepo.addBag(createdUser.id, createdBag2);
+        expect(cartItem2).toBeDefined();
+        expect(cartItem2.id).toBeDefined();
+        expect(cartItem2.bag.id).toBe(createdBag2.id);
+        expect(cartItem2.userId).toBe(createdUser.id);
+        expect(cartItem2.bag.items).toBeDefined();
+        expect(cartItem2.bag.estId).toBe(createdBag2.estId); // Check if the bagItem is associated with the correct bag
+
+    });
+
+
+    test("should not be able to add bags of the same establishment on the same day", async () => {
+
+
+        const newBagSameEst = {
+            bagType: 'regular',
+            estId: createdEstablishment.id,
+            size: 'large',
+            tags: 'high protein, low carb',
+            price: 10.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: true
+        }
+        const bagItem4 = {
+            name: 'Potato',
+            quantity: 2,
+            measurementUnit: 'kg',
+        };
+
+        newBagSameEst.items = [bagItem4];
+
+        //add the second bag
+        const createdBag2 = await bagsRepo.createBag(newBagSameEst);
+        expect(createdBag2).toBeDefined();
+        expect(createdBag2.id).toBeDefined();
+        expect(createdBag2.estId).toBe(createdEstablishment.id);
+        expect(createdBag2.items).toBeDefined();
+        expect(createdBag2.items).toHaveLength(1); // just 1 item added
+
+
+        //add createdbag
+
+        //expect no error 
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+
+
+        //add createdBag2 to the cart of user createdUser
+        //EXPECT ERROR
+        await expect(crtRepo.addBag(createdUser.id, createdBag2)).rejects.toThrow(
+            'You have already added a bag from this establishment today. Please try again tomorrow.'
+        );
 
     });
 
@@ -1706,3 +1832,4 @@ describe('CartItemRepo', () => {
     });
 
 });
+
