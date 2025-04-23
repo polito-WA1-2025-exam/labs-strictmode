@@ -135,7 +135,7 @@ export class BagRepo {
                         
                         //constructor(id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available)
                         const fetchedBag = new Bag(id,  bagType, estId, size, tags, price, null, pickupTimeStart, pickupTimeEnd, available);
-                        const bagItem_list = await this.getItems(fetchedBag);
+                        const bagItem_list = await this.getItems(id); //pass the id of the bag to get the items
                         fetchedBag.items = bagItem_list;
                         resolve(fetchedBag);
                     } else {
@@ -155,6 +155,7 @@ export class BagRepo {
     async getItems(id) {
         let bagItemRepo = new BagItemRepo(this.DB);
         const bagItem_list = await bagItemRepo.getBagItemListByBagId(id);
+        console.log("BAGITEM_LIST ALLA FINE: ", bagItem_list);
         return bagItem_list;
     }
 

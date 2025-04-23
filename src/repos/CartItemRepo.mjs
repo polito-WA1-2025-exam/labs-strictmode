@@ -30,7 +30,7 @@ export class CartItemRepo {
                     })
 
 
-                    console.log('Cart Item inserted succesfully: ', cartItem);
+                    //console.log('Cart Item inserted succesfully: ', cartItem);
                     resolve(cartItem);
                 }
             })
@@ -50,7 +50,6 @@ export class CartItemRepo {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
                 } else {
-                    console.log("CAZZZZZZZZ", row);
                     if (row) {
                         let id = parseInt(row[0].id, 10);
                         let bagId = parseInt(row[0].bagId, 10);
@@ -73,20 +72,32 @@ export class CartItemRepo {
         let query = 'SELECT * FROM CART_ITEM WHERE bagId = ? AND userId = ?';
         const db = this.DB;
         return new Promise((resolve, reject) => {
-            this.DB.run(query, [bagId, userId], async function(err, row) {
+            this.DB.get(query, [bagId, userId], async function(err, row) {
                 if (err) {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
                 } else {
                     if (row) {
-                        let id = parseInt(row[0].id, 10);
-                        let bagId = parseInt(row[0].bagId, 10);
-                        let userId = parseInt(row[0].userId, 10);
+                        let id = parseInt(row.id, 10);
+                        let bagId = parseInt(row.bagId, 10);
+                        let userId = parseInt(row.userId, 10);
 
-                        let fetchedCartItem = new CartItem(id, bagId, null);
+                        //fetch bag
+                        const bagRepo = new BagRepo(db);
+                        const fetchedBag = await bagRepo.getBagById(bagId);
+                        //console.log("ECCOLAAAAAA BAG: ", fetchedBag);
+                        if (!fetchedBag){
+                            //ERROR: bag not found
+                            console.error("ERROR: bag not found for bagId: ", bagId);
+                            reject(new Error("ERROR: bag not found for bagId: ", bagId));
+                        }
+
+                        let fetchedCartItem = new CartItem(id, fetchedBag, userId, []);
                         let removedRepo = new RemovedRepo(db);
-                        let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
+                        //let bagItemRemoved_list = await removedRepo.getAllBagItemRemoved(userId);
+                        let bagItemRemoved_list = await removedRepo.getRemovedItems(id);
                         fetchedCartItem.removedItems = bagItemRemoved_list;
+
                         resolve(fetchedCartItem);
                     } else {
                         resolve (null);
@@ -246,7 +257,6 @@ export class CartItemRepo {
                         }
 
 
-                        console.log("CARTITEM_LIST: ", cartItem_list);
                         resolve(cartItem_list);
 
                     } else {

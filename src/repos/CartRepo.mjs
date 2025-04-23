@@ -1,4 +1,4 @@
-import {Cart, CartItem} from '../models/index.mjs'
+import {Cart, CartItem, Bag} from '../models/index.mjs'
 import { CartItemRepo, RemovedRepo } from './index.mjs';
 
 /**
@@ -20,7 +20,7 @@ export class CartRepo {
                                    //id, bagId, userId, removedItems
         let cartItem = new CartItem(null, bag, userId, []);
         cartItem = await cartItemRepo.createCartItem(cartItem);
-        console.log('Cart Item created successfully: ', cartItem);
+        //console.log('Cart Item created successfully: ', cartItem);
         return cartItem;
     }
 
@@ -44,10 +44,11 @@ export class CartRepo {
         let cartItemRepo = new CartItemRepo(this.DB);
         let cartItem_list = await cartItemRepo.getCartItemListByUserId(userId);
 
-        console.log("FUCKING CARTITEM_LIST: ", cartItem_list);
 
         let cart = new Cart(userId);
         cart.items = cartItem_list;
+
+
 
         return cart;
     }
@@ -65,6 +66,16 @@ export class CartRepo {
         let cartItemRepo = new CartItemRepo(this.DB);
         let cartItem = await cartItemRepo.getCartItemByBagIdUserID(bagId, userId);
 
+        //first satisfy these contraints:
+        /*
+        * Adds an item to the list of removed items.
+        * Only 2 items can be removed from a regular bag.
+        * No items can be removed from a surprise bag.
+        */
+        if (cartItem.bag.bagType !== Bag.TYPE_REGULAR) throw new Error('A non-regular bag cannot be personalized');
+        if (removedItems.length > 2) throw new Error('Cannot remove more than 2 items');
+
+        //if the contraints are satisfied, update the removed items in the cartItem
         let removedRepo = new RemovedRepo(this.DB);
         await Promise.all(removedItems.map(bagItemId => {
             return removedRepo.createRemoved(bagItemId, cartItem.id);

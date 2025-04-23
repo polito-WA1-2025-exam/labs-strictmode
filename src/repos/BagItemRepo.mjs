@@ -20,7 +20,7 @@ export class BagItemRepo {
                     console.error('Error inserting bagItem:', err.message);
                     reject(err);
                 } else {
-                    console.log('BagItem inserted successfully with ID:', this.lastID);
+                    console.log('BagItem inserted successfully:', bagItem);
                     let fetchedBagItem = await self.getBagItemById(this.lastID);
                     resolve(fetchedBagItem);
                 }
@@ -101,9 +101,12 @@ export class BagItemRepo {
                         let quantity = parseFloat(row.quantity);
                         let measurementUnit = row.measurementUnit;
 
+                        //                              (id, bagId, name, quantity, measurementUnit
                         let fetchedBagItem = new BagItem(id, bagId, name, quantity, measurementUnit);
+                        //console.log("FETCHED: ", fetchedBagItem);
                         bagItem_list.push(fetchedBagItem);
                     })
+
                     resolve(bagItem_list)
 
                     } else {

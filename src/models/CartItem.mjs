@@ -25,7 +25,8 @@ export class CartItem {
 
         this.removedItems = [];
         for (let item of removedItems) {
-            this.removeItem(item);
+            console.log("Adding item to removedItems: ", item);
+            this.removeItem(item.bagItemId);
         }
 
         this.addedAt = dayjs(); // Track cart addition time
@@ -43,9 +44,16 @@ export class CartItem {
     removeItem(itemId) {
         if (this.bag.bagType !== Bag.TYPE_REGULAR || this.removedItems.length >= 2)
             throw new Error('Cannot remove more items');
-        if (this.bag.items.some(item => item.itemId === itemId)) return;        // check if present in bag
 
-        this.removedItems = [...new Set([...this.removedItems, itemId])];
+        console.log("BAGGGGGGGGG: ", this.bag);
+
+
+        if (this.bag.items.some(item => item.itemId === itemId)) {
+            this.removedItems = [...new Set([...this.removedItems, itemId])];
+            console.log("Removed items: ", this.removedItems);
+        } else {
+            throw new Error('Item not found in bag');
+        }
     }
 }
 

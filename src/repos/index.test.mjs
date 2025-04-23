@@ -516,7 +516,7 @@ describe('BagRepo', () => {
     });
 
 
-    test('should add bagItems, correctly associate them with the bag and retrieve them', async () => {
+    test('should add bagItems and correctly associate them with the bag', async () => {
 
 
         //Create a new bag
@@ -606,6 +606,90 @@ describe('BagRepo', () => {
         expect(createdBag.items[2].name).toBe(bagItem3.name);
         expect(createdBag.items[2].quantity).toBe(bagItem3.quantity);
         expect(createdBag.items[2].measurementUnit).toBe(bagItem3.measurementUnit);
+
+
+    });
+
+    test("should completely reconstruct the bag from the db (along with all its bagItems)", async () => {
+        //VERY IMPORTANT TEST!!!
+
+        const newBag = {
+            bagType: 'big',
+            estId: createdEstablishment.id,
+            size: 'medium',
+            tags: 'gluten free, lactose free',
+            price: 10.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: true
+        }
+
+        //add three bag items to the bag
+        /**
+         * @param {number} bagId
+         * @param {number} id - Unique id for the item. Unique within the bag.
+         * @param {string} name
+         * @param {number} quantity - Must always be greater than 0.
+         * @param {string} measurementUnit - Unit of measurement for the quantity (e.g., "kg", "g", "units").
+         **/
+
+        const bagItem1 = {
+            name: 'Tomato',
+            quantity: 2,
+            measurementUnit: 'kg',
+        };
+
+        const bagItem2 = {
+            name: 'Orange',
+            quantity: 1,
+            measurementUnit: 'kg',
+        };
+
+
+        const bagItem3 = {
+            name: 'Carrot',
+            quantity: 3,
+            measurementUnit: 'kg',
+        };
+
+
+        newBag.items = [bagItem1, bagItem2, bagItem3];
+
+
+        const createdBag = await bagsRepo.createBag(newBag);
+
+        //GET BAG BY ID using the getBagById method of the bagRepo to build the bag completely from what's retrieved from the db
+        //this function is VERY important to be tested
+        const fetchedBag = await bagsRepo.getBagById(createdBag.id);
+        expect(fetchedBag).toBeDefined();
+        expect(fetchedBag.id).toBe(createdBag.id);
+        expect(fetchedBag.bagType).toBe(newBag.bagType);
+        expect(fetchedBag.estId).toBe(newBag.estId);
+        expect(fetchedBag.size).toBe(newBag.size);
+        expect(fetchedBag.tags).toEqual(newBag.tags);
+        expect(fetchedBag.price).toBe(newBag.price);
+        //since bag objects have dayjd dates, we need to check if the date is the same so we first need to format it to a string
+        expect(fetchedBag.pickupTimeStart.format('YYYY-MM-DD')).toBe("2021-06-01");
+        expect(fetchedBag.pickupTimeEnd.format('YYYY-MM-DD')).toBe("2026-12-01");
+
+        expect(fetchedBag.available).toBe(true);
+
+        //bagItems check
+        //check items length
+        expect(fetchedBag.items).toBeDefined();
+        expect(fetchedBag.items).toHaveLength(3); // Three items added
+
+        //check the items are correct
+        expect(fetchedBag.items[0].name).toBe(bagItem1.name);
+        expect(fetchedBag.items[0].quantity).toBe(bagItem1.quantity);
+        expect(fetchedBag.items[0].measurementUnit).toBe(bagItem1.measurementUnit);
+        expect(fetchedBag.items[1].name).toBe(bagItem2.name);
+        expect(fetchedBag.items[1].quantity).toBe(bagItem2.quantity);
+        expect(fetchedBag.items[1].measurementUnit).toBe(bagItem2.measurementUnit);
+        expect(fetchedBag.items[2].name).toBe(bagItem3.name);
+        expect(fetchedBag.items[2].quantity).toBe(bagItem3.quantity);
+        expect(fetchedBag.items[2].measurementUnit).toBe(bagItem3.measurementUnit);
     });
 
 
@@ -927,7 +1011,7 @@ describe('CartRepo', () => {
         address: '123 Test St'
     }
     const newBag = {
-        bagType: 'big',
+        bagType: 'regular',
         estId: 1, //set manually 1 since in this test suite we just have the new establishment created
         size: 'medium',
         tags: 'gluten free, lactose free',
@@ -990,6 +1074,7 @@ describe('CartRepo', () => {
         expect(createdBag.estId).toBe(createdEstablishment.id);
         expect(createdBag.items).toBeDefined();
         expect(createdBag.items).toHaveLength(3); // Three items added
+        console.log("CIUPPA ITEMSSSSS: ", createdBag.items);
 
         //create the user
         createdUser = await usRepo.createUser(user);
@@ -1138,6 +1223,47 @@ describe('CartRepo', () => {
         const res = await crtRepo.removeBag(9999, 99999); 
         //expect null, no errors should be thrown since the bagId and userId are not in the DB
         expect(res).toBeNull(); // No items in the cart after removal
+    });
+
+
+    test("should handle bags personalization (i.e. bagItems removal)", async () => {
+
+        const cartItem = await crtRepo.addBag(createdUser.id, createdBag);
+        expect(cartItem).toBeDefined();
+        expect(cartItem.id).toBeDefined();
+        //check correctness of cartItem
+        expect(cartItem.bag.id).toBe(createdBag.id); 
+        expect(cartItem.userId).toBe(createdUser.id); 
+        //check it has 3 items
+        expect(cartItem.bag.items).toBeDefined();
+        expect(cartItem.bag.items).toHaveLength(3); // Three items added to the cartItem
+
+        let cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+        //check if the cartItem is in the cart
+        expect(cart.items).toBeDefined();
+        expect(cart.items).toHaveLength(1); // One item added to the cart
+        expect(cart.items[0].id).toBeDefined();
+        expect(cart.items[0].id).toBe(cartItem.id);
+
+
+        //remove bagItem3 - Lettuce - of createdBag from the cart of user createdUser
+        //after this the cartItem should have 2 items (bagItems) left
+
+        /*
+        const removedItems = await crtRepo.personalizeBag(createdUser.id, createdBag.id, [2]); 
+        
+        //check now cartItem has just zero items
+        cart = await crtRepo.getCartByUserId(createdUser.id);
+        expect(cart).toBeDefined();
+        expect(cart.userId).toBeDefined();
+        expect(cart.userId).toBe(createdUser.id);
+        //check if the cartItem is in the cart
+        expect(cart.items).toBeDefined();
+        expect(cart.items).toHaveLength(0); // One item added to the car
+        */
     });
 
 });
