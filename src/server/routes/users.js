@@ -1,10 +1,28 @@
 import express from "express";
+import {isValidEmail, isValidAssignedName, isValidFamilyName} from "../utils.mjs";
+
+
 export function createUsersRouter({ userRepo }) {
     const router = express.Router();
     
     // create a new user
     router.post("/", async (req, res) => {
         const { email, assignedName, familyName } = req.body;
+
+        //verify email is valid
+        if (!isValidEmail(email)) {
+            return res.status(400).json("Error: invalid email address!");
+        }
+
+        //verify assignedName is valid
+        if (!isValidAssignedName(assignedName)) {
+            return res.status(400).json("Error: invalid assigned name!");
+        }
+
+        //verify familyName is valid
+        if (!isValidFamilyName(familyName)) {
+            return res.status(400).json("Error: invalid family name!");
+        }
         
         const newUser = await userRepo.createUser(email, assignedName, familyName);
         return res.json(newUser);
@@ -15,6 +33,22 @@ export function createUsersRouter({ userRepo }) {
         //convert id to number
         const id = parseInt(req.params.id);
         const { email, assignedName, familyName } = req.body;
+
+        //verify email is valid
+        if (!isValidEmail(email)) {
+            return res.status(400).json("Error: invalid email address!");
+        }
+
+        //verify assignedName is valid
+        if (!isValidAssignedName(assignedName)) {
+            return res.status(400).json("Error: invalid assigned name!");
+        }
+
+        //verify familyName is valid
+        if (!isValidFamilyName(familyName)) {
+            return res.status(400).json("Error: invalid family name!");
+        }
+
         const updatedUser = await userRepo.updateUser(id, email, assignedName, familyName);
         return res.json(updatedUser);
     });
