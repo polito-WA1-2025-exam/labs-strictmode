@@ -136,11 +136,12 @@ export class ReservationRepo {
         const cartItemRepo = new CartItemRepo(this.DB);
         const cartItem_list = await cartItemRepo.getCartItemListByUserId(userId);
 
-        reservation_list = []
-        cartItem_list.forEach(async cartItem => {
+        const reservation_list = [];
+        for (const cartItem of cartItem_list) {
             const reservation = await this.getReservationByCartItemId(cartItem.id);
             reservation_list.push(reservation);
-        })
+        }
+
         return(reservation_list);
     }
 
@@ -151,13 +152,13 @@ export class ReservationRepo {
      */
     async listReservationsByEstablishment(estId) {
         const cartItemRepo = new CartItemRepo(this.DB);
-        const cartItem_list = await cartItemRepo.getCartItemListByEstId(estId);
+        const cartItem_list = await cartItemRepo.listCartItemsByEstablishmentId(estId);
 
-        reservation_list = []
-        cartItem_list.forEach(async cartItem => {
+        const reservation_list = []
+        for (const cartItem of cartItem_list) {
             const reservation = await this.getReservationByCartItemId(cartItem.id);
             reservation_list.push(reservation);
-        })
+        }
         return(reservation_list);
     }
 

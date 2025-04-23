@@ -1983,5 +1983,60 @@ describe('ReservationRepo', () => {
     });
 
 
+    test("should list reservations made by user", async () => {
+        const dateRef = dayjs().format('YYYY-MM-DD'); // Use current date for createdAt
+        const reserv = {
+            userId: createdUser.id,
+            cartItem: createdCartItem,
+            createdAt: dateRef
+        }
+
+        const createdReservation = await rsRepo.createReservation(reserv);
+        expect(createdReservation).toBeDefined();
+        expect(createdReservation.id).toBeDefined();
+        expect(createdReservation.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
+        expect(createdReservation.cartItem.id).toBe(createdCartItem.id); // Check if the reservation is associated with the correct cartItem
+    
+    
+        //list reservation
+        const reservationList = await rsRepo.listReservationsByUser(createdUser.id);
+        expect(reservationList).toBeDefined();
+        expect(reservationList).toHaveLength(1); //One reservation made by the user
+        expect(reservationList[0].id).toBeDefined();
+        expect(reservationList[0].userId).toBe(createdUser.id);
+        expect(reservationList[0].cartItem.id).toBe(createdCartItem.id); 
+        expect(reservationList[0].createdAt).toBeDefined();
+        expect(reservationList[0].createdAt.isSame(dayjs(dateRef, 'YYYY-MM-DD'), 'day')).toBe(true);
+
+    });
+
+    test("should list reservation for each establishment", async () => {
+        const dateRef = dayjs().format('YYYY-MM-DD'); //Use current date for createdAt
+        const reserv = {
+            userId: createdUser.id,
+            cartItem: createdCartItem,
+            createdAt: dateRef
+        }
+
+        const createdReservation = await rsRepo.createReservation(reserv);
+        expect(createdReservation).toBeDefined();
+        expect(createdReservation.id).toBeDefined();
+
+
+        const estId = createdEstablishment.id; 
+
+        const fetchedReservations = await rsRepo.listReservationsByEstablishment(estId);
+        //check we fetched just one reservation
+        expect(fetchedReservations).toBeDefined();
+        expect(fetchedReservations).toHaveLength(1); //One reservation made by the user
+
+        //check the one reservation we fetched is the one we created
+        expect(fetchedReservations[0].id).toBeDefined();
+        expect(fetchedReservations[0].userId).toBe(createdUser.id);
+        expect(fetchedReservations[0].cartItem.id).toBe(createdCartItem.id);
+        expect(fetchedReservations[0].cartItem.bag.id).toBe(createdBag.id);
+    });
+
+
 });
 

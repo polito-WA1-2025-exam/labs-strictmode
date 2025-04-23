@@ -338,4 +338,19 @@ export class CartItemRepo {
         })
     }
 
+
+    async listCartItemsByEstablishmentId(estId) {
+        let query = 'SELECT * FROM CART_ITEM WHERE bagId IN (SELECT id FROM BAG WHERE estId = ?)';
+        return new Promise((resolve, reject) => {
+            this.DB.all(query, [estId], (err, rows) => {
+                if (err) {
+                    console.error('Error retrieving cart items: ', err.message);
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+    }
+
 }
