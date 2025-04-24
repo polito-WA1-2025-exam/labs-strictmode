@@ -173,7 +173,7 @@ export class ReservationRepo {
             await this.DB.run('BEGIN TRANSACTION'); //Start explicit transaction
     
             //Attempt to set bag availability first
-            await bagRepo.setAvailable(reservation.cartItem.bag.id, false);
+            await bagRepo.setAvailable(reservation.cartItem.bag.id, true);
     
             //If successful, then finalize the reservation cancellation
             const query = 'UPDATE RESERVATION SET canceledAt = ? WHERE id = ?'; 
