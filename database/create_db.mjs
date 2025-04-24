@@ -89,8 +89,6 @@ export function createDb(dbPath) {
         )`, handleError);
 
         // REMOVED: Each record is a bagItem removed from a cartItem.
-        // 2 cartItems of 2 different users might be the same bag with different bagItems removed.
-        // Create REMOVED table
         db.run(`CREATE TABLE IF NOT EXISTS REMOVED (
           bagItemId INTEGER,
           cartItemId INTEGER,

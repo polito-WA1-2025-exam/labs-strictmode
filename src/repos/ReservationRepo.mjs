@@ -90,6 +90,7 @@ export class ReservationRepo {
                             canceledAt = dayjs(row.canceledAt, 'YYYY-MM-DD');
                         }
 
+
                         const cartItemRepo = new CartItemRepo(db);
                         const reservedCartItem = await cartItemRepo.getCartItemById(cartItemId);
                         //                                      id, userId, cartItem, createdAt
@@ -167,18 +168,34 @@ export class ReservationRepo {
      * @param {Reservation} reservation
      */
     async cancelReservation(reservation) {
-        const query = 'UPDATE RESERVATION SET canceledAt = ? WHERE cartItemId = ?';
-        return new Promise((resolve, reject) => {
-            this.DB.run(query, [reservation.canceledAt, reservation.cartItem.id], async (err) => {
-                if (err) {
-                    console.err('Error updating canceledAt in Reservation: ', err.message);
-                    reject(err);
-                } else {
-                    console.log('Reservation canceled succesfully');
-                    await this.setAvailableAttributesForBags(reservation.cartItem.id, 1);
-                    resolve(null);
-                }
-            })
-        })
+        const bagRepo = new BagRepo(this.DB);
+        try {
+            await this.DB.run('BEGIN TRANSACTION'); //Start explicit transaction
+    
+            //Attempt to set bag availability first
+            await bagRepo.setAvailable(reservation.cartItem.bag.id, false);
+    
+            //If successful, then finalize the reservation cancellation
+            const query = 'UPDATE RESERVATION SET canceledAt = ? WHERE id = ?'; 
+            await new Promise((resolve, reject) => {
+                this.DB.run(query, [reservation.canceledAt, reservation.id], (err) => { 
+                    if (err) {
+                        console.error('Error updating canceledAt in Reservation: ', err.message);
+                        return reject(err);
+                    } else {
+                        resolve(null);
+                    }
+                });
+            });
+    
+            //Commit the transaction if everything went well
+            await this.DB.run('COMMIT');
+            return null;
+        } catch (error) {
+            // Rollback the transaction in case of error
+            await this.DB.run('ROLLBACK');
+            console.error("Error during cancellation process: ", error.message);
+            throw error;
+        }
     }
 }

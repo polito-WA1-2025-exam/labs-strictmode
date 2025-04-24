@@ -1993,7 +1993,6 @@ describe('ReservationRepo', () => {
 
         const createdReservation = await rsRepo.createReservation(reserv);
         expect(createdReservation).toBeDefined();
-        expect(createdReservation.id).toBeDefined();
         expect(createdReservation.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
         expect(createdReservation.cartItem.id).toBe(createdCartItem.id); // Check if the reservation is associated with the correct cartItem
     
@@ -2002,7 +2001,7 @@ describe('ReservationRepo', () => {
         const reservationList = await rsRepo.listReservationsByUser(createdUser.id);
         expect(reservationList).toBeDefined();
         expect(reservationList).toHaveLength(1); //One reservation made by the user
-        expect(reservationList[0].id).toBeDefined();
+        expect(reservationList[0]).toBeDefined();
         expect(reservationList[0].userId).toBe(createdUser.id);
         expect(reservationList[0].cartItem.id).toBe(createdCartItem.id); 
         expect(reservationList[0].createdAt).toBeDefined();
@@ -2021,6 +2020,8 @@ describe('ReservationRepo', () => {
         const createdReservation = await rsRepo.createReservation(reserv);
         expect(createdReservation).toBeDefined();
         expect(createdReservation.id).toBeDefined();
+        expect(createdReservation.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
+        expect(createdReservation.cartItem.id).toBe(createdCartItem.id); // Check if the reservation is associated with the correct cartItem
 
 
         const estId = createdEstablishment.id; 
@@ -2031,11 +2032,49 @@ describe('ReservationRepo', () => {
         expect(fetchedReservations).toHaveLength(1); //One reservation made by the user
 
         //check the one reservation we fetched is the one we created
-        expect(fetchedReservations[0].id).toBeDefined();
+        expect(fetchedReservations[0]).toBeDefined();
         expect(fetchedReservations[0].userId).toBe(createdUser.id);
         expect(fetchedReservations[0].cartItem.id).toBe(createdCartItem.id);
         expect(fetchedReservations[0].cartItem.bag.id).toBe(createdBag.id);
     });
+
+    test("should cancel a reservation (without deleting it)", async () => {
+        //create the reservation
+        const dateRef = dayjs().format('YYYY-MM-DD'); //Use current date for createdAt
+        const reserv = {
+            userId: createdUser.id,
+            cartItem: createdCartItem,
+            createdAt: dateRef
+        }
+
+
+        const createdReservation = await rsRepo.createReservation(reserv);
+        expect(createdReservation).toBeDefined();
+        expect(createdReservation.cartItem.id).toBe(createdCartItem.id); // Check if the reservation is associated with the correct cartItem
+        expect(createdReservation.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
+
+        //SET canceledAt to the current date
+        createdReservation.canceledAt = dateRef;
+
+        console.log("CANCELED RESERVATION: ", createdReservation);
+
+        //delete the reservation by id
+        const res = await rsRepo.cancelReservation(createdReservation); 
+        //res needs to be null -> cancelling successfully done
+        expect(res).toBeNull(); 
+
+        //try to retrieve the canceled reservation by id
+        const fetchedReservation = await rsRepo.getReservationByCartItemId(createdCartItem.id); 
+        expect(fetchedReservation).toBeDefined(); 
+        expect(fetchedReservation.cartItem.id).toBe(createdCartItem.id);
+        //check canceledAt is NOT NULL 
+        expect(fetchedReservation.canceledAt).toBeDefined();
+        expect(fetchedReservation.canceledAt.isSame(dayjs(dateRef, 'YYYY-MM-DD'), 'day')).toBe(true); // Check if the canceledAt date is correct
+
+    });
+
+    //TODO: TEST DI RESERVATIONS RISPETTANDO I CONTRAINTS (i.e. one reservation per user for each establishment at a day)
+    //TODO: TEST DI CON BAG AVAILABILITY (i.e. bag was available during cart but at the moment of reservation it was not available anymore)
 
 
 });
