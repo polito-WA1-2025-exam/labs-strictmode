@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from 'vitest';
+import { describe, expect, test, beforeEach, beforeAll } from 'vitest';
 import { createDb } from "../../database";
 import { BagRepo, UserRepo, CartRepo, ReservationRepo, EstablishmentRepo, BagItemRepo, CartItemRepo } from "../repos/index.mjs";
 import dayjs from 'dayjs';
@@ -1983,32 +1983,6 @@ describe('ReservationRepo', () => {
     });
 
 
-    test("should list reservations made by user", async () => {
-        const dateRef = dayjs().format('YYYY-MM-DD'); // Use current date for createdAt
-        const reserv = {
-            userId: createdUser.id,
-            cartItem: createdCartItem,
-            createdAt: dateRef
-        }
-
-        const createdReservation = await rsRepo.createReservation(reserv);
-        expect(createdReservation).toBeDefined();
-        expect(createdReservation.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
-        expect(createdReservation.cartItem.id).toBe(createdCartItem.id); // Check if the reservation is associated with the correct cartItem
-    
-    
-        //list reservation
-        const reservationList = await rsRepo.listReservationsByUser(createdUser.id);
-        expect(reservationList).toBeDefined();
-        expect(reservationList).toHaveLength(1); //One reservation made by the user
-        expect(reservationList[0]).toBeDefined();
-        expect(reservationList[0].userId).toBe(createdUser.id);
-        expect(reservationList[0].cartItem.id).toBe(createdCartItem.id); 
-        expect(reservationList[0].createdAt).toBeDefined();
-        expect(reservationList[0].createdAt.isSame(dayjs(dateRef, 'YYYY-MM-DD'), 'day')).toBe(true);
-
-    });
-
     test("should list reservation for each establishment", async () => {
         const dateRef = dayjs().format('YYYY-MM-DD'); //Use current date for createdAt
         const reserv = {
@@ -2073,6 +2047,135 @@ describe('ReservationRepo', () => {
 
     });
 
+
+    describe('Listing reservations made by a user (Active, Canceled, All)', () => {
+
+        let createdReservation; 
+        let createdReservation2; 
+
+        beforeEach(async () => {
+            const dateRef = dayjs().format('YYYY-MM-DD'); // Use current date for createdAt
+            const reserv = {
+                userId: createdUser.id,
+                cartItem: createdCartItem,
+                createdAt: dateRef
+            }
+
+            createdReservation = await rsRepo.createReservation(reserv);
+            expect(createdReservation).toBeDefined();
+            expect(createdReservation.id).toBeDefined();
+            expect(createdReservation.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
+            expect(createdReservation.cartItem.id).toBe(createdCartItem.id);
+
+
+            //Now do another reservation and then cancel it
+            const est2 = {
+                name: 'Test Establishment 2',
+                bags: [], // Initially no bags
+                estType: 'Restaurant',
+                address: '123 Test St 2'
+            }
+
+            const createdEstablishment2 = await establishmentRepo.createEstablishment(est2);
+            expect(createdEstablishment2).toBeDefined();
+            expect(createdEstablishment2.id).toBeDefined();
+
+            const bag2 = {
+                bagType: 'regular',
+                estId: createdEstablishment2.id, 
+                size: 'medium',
+                tags: 'gluten free, lactose free',
+                price: 10.99,
+                items: null, 
+                pickupTimeStart: "2021-06-01", 
+                pickupTimeEnd: "2026-12-01",
+                available: true
+            }
+
+            const createdBag2 = await bagsRepo.createBag(bag2);
+            expect(createdBag2).toBeDefined();
+            expect(createdBag2.id).toBeDefined();
+            expect(createdBag2.estId).toBe(createdEstablishment2.id);
+
+            //reserv this second bag
+            const cartItem2 = await crtRepo.addBag(createdUser.id, createdBag2);
+            expect(cartItem2).toBeDefined();
+            expect(cartItem2.id).toBeDefined();
+            expect(cartItem2.userId).toBe(createdUser.id); // Check if the cartItem is associated with the correct user
+            expect(cartItem2.bag.id).toBe(createdBag2.id); // Check if the cartItem is associated with the correct bag
+
+
+            const reserv2 = {
+                userId: createdUser.id,
+                cartItem: cartItem2,
+                createdAt: dateRef
+            }
+
+            createdReservation2 = await rsRepo.createReservation(reserv2);
+            expect(createdReservation2).toBeDefined();
+            expect(createdReservation2.id).toBeDefined();
+            expect(createdReservation2.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
+
+
+            //Now cancel the second reservation
+            createdReservation2.canceledAt = dateRef;
+
+            const res = await rsRepo.cancelReservation(createdReservation2);
+            //res needs to be null -> cancelling successfully done
+            expect(res).toBeNull();
+
+        });
+
+        test("should list all the active (i.e. NOT canceled) reservations made by user", async () => {
+
+
+            //Now retieve JUST THE ACTIVE RESERVATIONS (i.e. NOT CANCELED) made by the user
+            const activeReservations = await rsRepo.listReservationsByUser(createdUser.id, 'active');
+            //expect JUST the first reservation to be in the list
+            expect(activeReservations).toBeDefined();
+            expect(activeReservations).toHaveLength(1); // One active reservation made by the user
+            //check it's actually the first reservation we created
+            expect(activeReservations[0]).toBeDefined();
+            expect(activeReservations[0].id).toBe(createdReservation.id);
+            expect(activeReservations[0].canceledAt).toBeNull(); // Check if canceledAt is null for active reservation
+            expect(activeReservations[0].cartItem.id).toBe(createdCartItem.id); // Check if the cartItem is correct
+        });
+
+        test("should list all the canceled reservations made by user", async () => {
+
+            //Now retieve JUST THE CANCELED RESERVATIONS made by the user
+            const canceledReservations = await rsRepo.listReservationsByUser(createdUser.id, 'canceled');
+            //expect JUST the second reservation to be in the list
+            expect(canceledReservations).toBeDefined();
+            expect(canceledReservations).toHaveLength(1); // One canceled reservation made by the user
+            //check it's actually the second reservation we created and then canceled
+            expect(canceledReservations[0]).toBeDefined();
+            expect(canceledReservations[0].id).toBe(createdReservation2.id);
+            expect(canceledReservations[0].canceledAt).toBeDefined(); // Check if canceledAt is not null for canceled reservation
+            expect(canceledReservations[0].cartItem.id).toBe(createdReservation2.cartItem.id); // Check if the cartItem is correct
+        });
+
+
+        test("should list all the reservations made by user (active and canceled)", async () => {
+
+            //Now retieve ALL THE RESERVATIONS made by the user
+            const allReservations = await rsRepo.listReservationsByUser(createdUser.id, 'all');
+            //expect both the reservations to be in the list
+            expect(allReservations).toBeDefined();
+            expect(allReservations).toHaveLength(2); // Two reservations made by the user
+            //check it's actually both the reservations we created
+            expect(allReservations[0]).toBeDefined();
+            expect(allReservations[0].id).toBe(createdReservation.id);
+            expect(allReservations[0].canceledAt).toBeNull(); // Check if canceledAt is null for active reservation
+            expect(allReservations[0].cartItem.id).toBe(createdCartItem.id); // Check if the cartItem is correct
+            expect(allReservations[1]).toBeDefined();
+            expect(allReservations[1].id).toBe(createdReservation2.id);
+            expect(allReservations[1].canceledAt).toBeDefined(); // Check if canceledAt is not null for canceled reservation
+            expect(allReservations[1].cartItem.id).toBe(createdReservation2.cartItem.id); // Check if the cartItem is correct
+        });
+
+
+    });
     //TODO: TEST DI RESERVATIONS RISPETTANDO I CONTRAINTS (i.e. one reservation per user for each establishment at a day)
     //TODO: TEST DI CON BAG AVAILABILITY (i.e. bag was available during cart but at the moment of reservation it was not available anymore)
 

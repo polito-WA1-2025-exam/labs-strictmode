@@ -154,7 +154,7 @@ export class CartItemRepo {
                     console.error('Error retriving cartItem: ', err.message);
                     reject(err);
                 } else {
-                    console.log("ROW: ", row);
+                    console.log("ROW22: ", row);
                     if (row && row.length > 0) {
                         let id = parseInt(row[0].id, 10);
                         let bagId = parseInt(row[0].bagId, 10);
