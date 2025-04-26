@@ -13,6 +13,6 @@
     "vitest": "^3.1.1"
   },
   "scripts": {
-    "test": "vitest"
+    "test": "vitest .\\src\\server\\routes\\index.test.js"
   }
 }

@@ -33,8 +33,8 @@ export function createUsersRouter({ userRepo }) {
         //create new user object
         const newUser = new User(null, email, assignedName, familyName, hashedPassword);
         try {
-            const res_ = await userRepo.createUser(newUser);
-            return res.status(HttpStatusCodes.CREATED).json(newUser);
+            const createdUser = await userRepo.createUser(newUser);
+            return res.status(HttpStatusCodes.CREATED).json(createdUser);
         } catch (error) {
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to create the user!" });
         }
@@ -72,6 +72,8 @@ export function createUsersRouter({ userRepo }) {
         //in this case verify if the old password is correct
         //fetch the old user from the db anc compare the hashed passwords
         
+        let updatedPassword = password; //updatedPassword corresponds the old password by default. If newPassword is not null, it will be updated to the new password
+
         if (newPassword) {
             try {
                 const fecthedUser = await userRepo.getUserById(id);
@@ -85,13 +87,14 @@ export function createUsersRouter({ userRepo }) {
                         return res.status(HttpStatusCodes.UNAUTHORIZED).json({ error: "Error: invalid password!" });
                     } else {
                         //encrypt the new Password
-                        password = await hashPassword(newPassword);
+                        updatedPassword = await hashPassword(newPassword);
                     }
 
                 } else {
                     return res.status(HttpStatusCodes.NOT_FOUND).json({ error: "Error: user not found!"});
                 }
             } catch (error) {  
+                console.log("error: ", error);
                 return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to get the user!" });
             }
         }
@@ -101,7 +104,7 @@ export function createUsersRouter({ userRepo }) {
         
         
         try {
-            const existentUser = new User(id, email, assignedName, familyName, password);
+            const existentUser = new User(id, email, assignedName, familyName, updatedPassword);
             const updatedUser = await userRepo.updateUser(existentUser);
             if (!updatedUser){
                 //if user is null -> updated was succesfull
