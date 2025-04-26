@@ -1,10 +1,12 @@
 const request = require('supertest');
 import express from 'express';
-import {User} from "../../models/User.mjs";
+import {User, Establishment} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
 import {createUsersRouter} from "./users.js";
+import {createEstablishmentsRouter} from "./establishments.js";
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { hashPassword, comparePassword } from '../crypto.mjs';
+import dayjs from 'dayjs';
 
 
 //All the Mocks for the Repos are inserted here
@@ -15,12 +17,23 @@ const mockUserRepo = {
     updateUser: vi.fn(),
     deleteUser: vi.fn(),
 };
+//Mock the establishmentRepo
+const mockEstablishmentRepo = {
+    createEstablishment: vi.fn(),
+    getEstablishmentById: vi.fn(),
+    updateEstablishment: vi.fn(),
+    deleteEstablishment: vi.fn(),
+    getBags: vi.fn(),
+    listAllEstablishments: vi.fn()
+};
 
 function setupApp() {
     const app = express();
     app.use(express.json());
     const userRouter = createUsersRouter({ userRepo: mockUserRepo });
+    const establishmentRouter = createEstablishmentsRouter({ estRepo: mockEstablishmentRepo });
     app.use('/users', userRouter);
+    app.use('/establishments', establishmentRouter);
     return app;
 }
 
@@ -486,5 +499,213 @@ describe('Users Router', () => {
 
 
 
+
+});
+
+
+//Establishment Router
+describe('Establishments Router', () => {
+
+    test('POST /establishments - create a new establishment', async () => {
+        const newEstablishment = {
+            name: 'Test Establishment',
+            bags: null,
+            estType: 'Test Type',
+            address: '123 Test St'
+        };
+
+        //the id will be 1 and it wil be added by the db, so we mock it here
+        const createdEstablishment = { id: 1, ...newEstablishment };
+        mockEstablishmentRepo.createEstablishment.mockResolvedValue(createdEstablishment);
+
+        const requestBody = {
+            name: newEstablishment.name,
+            estType: newEstablishment.estType,
+            address: newEstablishment.address
+        };
+
+        const response = await request(app)
+            .post('/establishments')
+            .send(requestBody);
+
+        //check HTTP status code
+        expect(response.status).toBe(HttpStatusCodes.CREATED);
+        expect(response.body).toEqual(createdEstablishment);
+
+    });
+
+    describe('POST /establishments - BAD REQUEST Errors', () => {
+        test("invalid establishment name", async () => {
+            let newEstablishment = {
+                name: '', // invalid name
+                estType: 'Test Type',
+                address: '123 Test St'
+            };
+
+            const response = await request(app)
+                .post('/establishments')
+                .send(newEstablishment);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid Establishment name!");
+
+
+        });
+
+        test("invalid establishment address", async () => {
+            let newEstablishment = {
+                name: 'Test Establishment',
+                estType: 'Test Type',
+                address: '' // invalid address
+            };
+
+            const response = await request(app)
+                .post('/establishments')
+                .send(newEstablishment);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid Establishment address!");
+
+
+        });
+    });
+
+    test("POST /establishments - INTERNAL SERVER ERROR", async () => {
+        //establishmentRepo.createEstablishment(newEstablishment) PROMISE REJECTED
+        mockEstablishmentRepo.createEstablishment.mockRejectedValue(new Error("Database error"));
+
+        let requestBody = {
+            name: "prova",
+            estType: "prova",
+            address: "prova"
+        };
+
+        const response = await request(app)
+            .post('/establishments')
+            .send(requestBody);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to create the establishment!");
+    });
+
+    test('GET /establishments/:estId - get an establishment by id', async () => {
+        const estId = 1;
+        const returnedEstablishment = new Establishment(estId, 'prova', null, 'prova', 'hashedPassword');
+        mockEstablishmentRepo.getEstablishmentById.mockResolvedValue(returnedEstablishment);
+
+        const response = await request(app)
+            .get(`/establishments/${estId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toEqual(returnedEstablishment);
+
+    });
+
+    test('GET /establishments/:estId - BAD REQUEST Error', async () => {
+        const estId = 'invalid-id'; //it will turn out to be NaN
+        const response = await request(app)
+            .get(`/establishments/${estId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: invalid Establishment id!");
+    });
+
+    test('GET /establishments/:estId - NOT FOUND Error', async () => {
+        const estId = 999; //assuming this establishment does not exist
+        mockEstablishmentRepo.getEstablishmentById.mockResolvedValue(null); //simulate establishment not found
+
+        const response = await request(app)
+            .get(`/establishments/${estId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.NOT_FOUND);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: establishment not found!");
+    });
+
+    test('GET /establishments/:estId - INTERNAL SERVER ERROR', async () => {
+        const estId = 1;
+        mockEstablishmentRepo.getEstablishmentById.mockRejectedValue(new Error("Database error"));
+
+        const response = await request(app)
+            .get(`/establishments/${estId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to get the establishment!");
+    });
+
+    test('GET /establishments - get all establishments', async () => {
+        const establishments = [
+            new Establishment(1, 'Establishment 1', null, 'Type 1', 'Address 1'),
+            new Establishment(2, 'Establishment 2', null, 'Type 2', 'Address 2')
+        ];
+        mockEstablishmentRepo.listAllEstablishments.mockResolvedValue(establishments);
+
+        const response = await request(app)
+            .get('/establishments/');
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toEqual(establishments);
+    });
+
+    test('GET /establishments/bags/:estId - get all bags of an establishment', async () => {
+        const estId = 1;
+        const bags = [
+            //dates are inserted with the string format YYYY-MM-DDTHH:mm:ss.sssZ just for testing purposes, in readlity in db they are saved and then parsed with dayjs
+            { id: 1, estId: estId, size: 'small', bagType: 'type1', tags: 'tag1', price: 10.0, pickupTimeStart: "2023-09-30T22:00:00.000Z", pickupTimeEnd: "2023-10-01T22:00:00.000Z", available: true },
+            { id: 2, estId: estId, size: 'large', bagType: 'type2', tags: 'tag2', price: 20.0, pickupTimeStart: "2023-10-02T22:00:00.000Z", pickupTimeEnd: "2023-10-03T22:00:00.000Z", available: false }
+        ];
+        mockEstablishmentRepo.getBags.mockResolvedValue(bags);
+
+        const response = await request(app)
+            .get(`/establishments/${estId}/bags`);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toEqual(bags);
+
+    });
+
+
+    test('DELETE /establishments/:estId - delete an establishment by id', async () => {
+        const estId = 1;
+        const establishment = new Establishment(estId, 'prova', null, 'prova', 'hashedPassword');
+        mockEstablishmentRepo.getEstablishmentById.mockResolvedValue(establishment); //simulate establishment found
+
+        const response = await request(app)
+            .delete(`/establishments/${estId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toHaveProperty('success');
+        expect(response.body.success).toBe("Establishment deleted successfully!");
+    });
+
+    test('DELETE /establishments/:estId - BAD REQUEST Error', async () => {
+        const estId = 'invalid-id'; //it will turn out to be NaN
+        const response = await request(app)
+            .delete(`/establishments/${estId}`);
+        
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: invalid Establishment id!");
+    });
+
+    test('DELETE /establishments/:estId - INTERNAL SERVER ERROR', async () => {
+        const estId = 1;
+        mockEstablishmentRepo.deleteEstablishment.mockRejectedValue(new Error("Database error"));
+
+        const response = await request(app)
+            .delete(`/establishments/${estId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to delete the establishment!");
+    });
+
+
+  
 
 });

@@ -1,6 +1,6 @@
 import express from "express";
-import isValidString from "../validation.mjs";
-import Establishment from "../../models/Establishment.mjs";
+import {isValidString} from "../validation.mjs";
+import {Establishment} from "../../models/Establishment.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
 
 
@@ -20,6 +20,7 @@ export function createEstablishmentsRouter({ estRepo }) {
         }
 
         try {
+            //id, name, bags, estType, address
             const newEstablishment = new Establishment(null, name, null, estType, address);
             const establishment = await estRepo.createEstablishment(newEstablishment);
             return res.status(HttpStatusCodes.CREATED).json(establishment);
@@ -33,19 +34,22 @@ export function createEstablishmentsRouter({ estRepo }) {
     router.get("/:estId", async (req, res) => {
         //get estId and convert it to number
         const estId = parseInt(req.params.estId);
+        if (isNaN(estId)) {
+            return res.status(HttpStatusCodes.BAD_REQUEST).json({ error: "Error: invalid Establishment id!" });
+        }
 
         try {
-            const res_ = await estRepo.getEstablishment(estId);
+            const res_ = await estRepo.getEstablishmentById(estId);
             if (!res_) {
                 // if res_ is null, establishment not found
-                return res.status(HttpStatusCodes.NOT_FOUND).json({ error: "Establishment not found!" });
+                return res.status(HttpStatusCodes.NOT_FOUND).json({ error: "Error: establishment not found!" });
             }
 
             // if res_ is not null, establishment found
             return res.json(res_);
         } catch (error) {
             // if error -> db error
-            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: Server error!" });
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to get the establishment!" });
         }
     });
 
@@ -53,9 +57,12 @@ export function createEstablishmentsRouter({ estRepo }) {
     router.delete("/:estId", async (req, res) => {
         //get estId and convert it to number
         const estId = parseInt(req.params.estId);
+        if (isNaN(estId)) {
+            return res.status(HttpStatusCodes.BAD_REQUEST).json({ error: "Error: invalid Establishment id!" });
+        }
         
         try {
-            const establishment = await estRepo.getEstablishment(estId);
+            const establishment = await estRepo.deleteEstablishment(estId);
             if (!establishment){
                 //if establishment is null -> deletion successful
                 return res.status(HttpStatusCodes.OK).json({ success: "Establishment deleted successfully!" });
@@ -65,7 +72,7 @@ export function createEstablishmentsRouter({ estRepo }) {
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to delete the establishment!" });
         } catch (error) {
             //if error -> est not found / db error
-            return res.status(HttpStatusCodes.NOT_FOUND).json({ error: "Establishment not found!" });
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to delete the establishment!" });
         }
         
     });
@@ -125,7 +132,7 @@ export function createEstablishmentsRouter({ estRepo }) {
     //get all establishments
     router.get("/", async (req, res) => {
         try {
-            const establishments = await estRepo.getAllEstablishments();
+            const establishments = await estRepo.listAllEstablishments();
             
             if (!establishments) {
                 // if establishments is null, no establishments found
@@ -139,6 +146,26 @@ export function createEstablishmentsRouter({ estRepo }) {
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: Server error!" });
         }
     });
+
+
+    //get all bags by establishment id
+    router.get("/:estId/bags", async (req, res) => {
+        //get estId and convert it to number
+        const estId = parseInt(req.params.estId);
+        if (isNaN(estId)) {
+            return res.status(HttpStatusCodes.BAD_REQUEST).json({ error: "Error: invalid Establishment id!" });
+        }
+
+        try {
+
+            const bags = await estRepo.getBags(estId);
+            return res.status(HttpStatusCodes.OK).json(bags);
+        } catch (error) {
+            // if error -> db error
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to get the bags!" });
+        }
+    });
+
 
     return router;
 }
