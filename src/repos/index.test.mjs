@@ -452,6 +452,18 @@ describe('BagRepo', () => {
     }
     let createdEstablishment;
 
+    let newBag = {
+        bagType: 'regular',
+        estId: null, //this will be set to the createdEstablishment.id in the beforeEach
+        size: 'medium',
+        tags: 'gluten free, lactose free',
+        price: 10.99,
+        items: null, //items will be properly tested in the bagRepo Test Suite
+        pickupTimeStart: "2021-06-01", 
+        pickupTimeEnd: "2026-12-01",
+        available: true
+    } 
+
     beforeEach(async () => {
         const {estRepo, bagRepo} = await createTestDbRepos();
         establishmentRepo = estRepo;
@@ -461,38 +473,14 @@ describe('BagRepo', () => {
         createdEstablishment = await establishmentRepo.createEstablishment(newEstablishment);
         expect(createdEstablishment).toBeDefined();
         expect(createdEstablishment.id).toBeDefined();
+
+        //set the estId of the newBag to the createdEstablishment.id
+        newBag.estId = createdEstablishment.id;
+
     });
 
 
     test('should create a new bag and retrieve it', async () => {
-
-
-        //Create a new bag
-
-        /**
-         * @constructor
-         * @param {number} id - Unique identifier for the bag.
-         * @param {string} bagType - Type of the bag (e.g., "regular", "surprise").
-         * @param {number} estId - The establishment ID associated with the bag.
-         * @param {string} size - "small", "medium", "large".
-         * @param {Array<string>} tags - Example: ["vegan", "gluten free"].
-         * @param {number} price - The price of the bag.
-         * @param {Array<Object>} items - Array of items in the bag.
-         * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
-         * @param {string} pickupTimeEnd - The end time for pickup in ISO 8601 format.
-         * @param {boolean} available
-         */
-        const newBag = {
-            bagType: 'big',
-            estId: createdEstablishment.id,
-            size: 'medium',
-            tags: 'gluten free, lactose free',
-            price: 10.99,
-            items: null, //items will be properly tested in the bagRepo Test Suite
-            pickupTimeStart: "2021-06-01", 
-            pickupTimeEnd: "2026-12-01",
-            available: true
-        }
 
         //in this first test, bag.items is null, so we will not test it here
 
@@ -520,32 +508,6 @@ describe('BagRepo', () => {
     test('should add bagItems and correctly associate them with the bag', async () => {
 
 
-        //Create a new bag
-
-        /**
-         * @constructor
-         * @param {number} id - Unique identifier for the bag.
-         * @param {string} bagType - Type of the bag (e.g., "regular", "surprise").
-         * @param {number} estId - The establishment ID associated with the bag.
-         * @param {string} size - "small", "medium", "large".
-         * @param {Array<string>} tags - Example: ["vegan", "gluten free"].
-         * @param {number} price - The price of the bag.
-         * @param {Array<Object>} items - Array of items in the bag.
-         * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
-         * @param {string} pickupTimeEnd - The end time for pickup in ISO 8601 format.
-         * @param {boolean} available
-         */
-        const newBag = {
-            bagType: 'big',
-            estId: createdEstablishment.id,
-            size: 'medium',
-            tags: 'gluten free, lactose free',
-            price: 10.99,
-            items: null, //items will be properly tested in the bagRepo Test Suite
-            pickupTimeStart: "2021-06-01", 
-            pickupTimeEnd: "2026-12-01",
-            available: true
-        }
 
         //add three bag items to the bag
         /**
@@ -614,17 +576,6 @@ describe('BagRepo', () => {
     test("should completely reconstruct the bag from the db (along with all its bagItems)", async () => {
         //VERY IMPORTANT TEST!!!
 
-        const newBag = {
-            bagType: 'big',
-            estId: createdEstablishment.id,
-            size: 'medium',
-            tags: 'gluten free, lactose free',
-            price: 10.99,
-            items: null, //items will be properly tested in the bagRepo Test Suite
-            pickupTimeStart: "2021-06-01", 
-            pickupTimeEnd: "2026-12-01",
-            available: true
-        }
 
         //add three bag items to the bag
         /**
@@ -697,18 +648,6 @@ describe('BagRepo', () => {
     test("should change bag availability and correctly retrieve it (with both methods)", async () => {
 
 
-        const newBag = {
-            bagType: 'big',
-            estId: createdEstablishment.id,
-            size: 'medium',
-            tags: 'gluten free, lactose free',
-            price: 10.99,
-            items: null, //items will be properly tested in the bagRepo Test Suite
-            pickupTimeStart: "2021-06-01", 
-            pickupTimeEnd: "2026-12-01",
-            available: true
-        }
-
 
         //create a new bag
         const createdBag = await bagsRepo.createBag(newBag);
@@ -733,6 +672,41 @@ describe('BagRepo', () => {
         expect(availability).toBe(false); // Bag should be unavailable now
     });
 
+    test("should check bag availability correctly", async () => {
+        //create a new bag
+        const createdBag = await bagsRepo.createBag(newBag);
+        expect(createdBag).toBeDefined();
+        expect(createdBag.id).toBeDefined();
+
+        //retrieve availability of the bag
+        const availability = await bagsRepo.checkBagAvailable(createdBag.id);
+        //it should be available since we just created it and didn't set it to unavailable
+        expect(availability).toBeDefined(); //it should not be null since the bag is defined
+        expect(availability).toBe(true); // Bag should be available now
+
+        //now crete an unavailable bag
+        let newBag2 = {
+            bagType: 'regular',
+            estId: null, //this will be set to the createdEstablishment.id in the beforeEach
+            size: 'medium',
+            tags: 'gluten free, lactose free',
+            price: 10.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: false // Set to unavailable
+        } 
+
+        //create the bag
+        const createdBag2 = await bagsRepo.createBag(newBag2);
+        expect(createdBag2).toBeDefined();
+        expect(createdBag2.id).toBeDefined();
+
+        //retrieve availability of the bag
+        const availability2 = await bagsRepo.checkBagAvailable(createdBag2.id);
+        expect(availability2).toBeDefined(); //it should not be null since the bag is defined
+        expect(availability2).toBe(false); // Bag should be unavailable now
+    });
 
     test("should handle bags updates correctly", async () => {
     
