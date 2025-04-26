@@ -54,10 +54,25 @@ export class ReservationRepo {
      * @param {*} userId 
      * @param {*} createdAt 
      * @param {*} estId 
-     * @returns 
+     * @returns true if the user has a reservation for the same establishment at the same day, false otherwise.
+     * TLDR: true if BAD, false if GOOD
      */
     async checkEstablishmentContraint(userId, createdAt, estId) {
-        const query = 'SELECT COUNT(*) FROM RESERVATION WHERE userId = ? AND createdAt = ? AND canceledAt IS NULL AND cartItemId IN (SELECT id FROM CART_ITEM WHERE estId = ?)';
+        const query = `
+            SELECT COUNT(*)
+            FROM RESERVATION
+            WHERE userId = ?
+            AND createdAt = ?
+            AND canceledAt IS NULL
+            AND cartItemId IN (
+                SELECT id
+                FROM CART_ITEM
+                WHERE bagId IN (
+                SELECT id
+                FROM BAG
+                WHERE estId = ?
+                )
+            )`;
         return new Promise((resolve, reject) => {
             this.DB.get(query, [userId, createdAt, estId], (err, row) => {
                 if (err) {

@@ -2176,9 +2176,94 @@ describe('ReservationRepo', () => {
 
 
     });
-    //TODO: TEST DI RESERVATIONS RISPETTANDO I CONTRAINTS (i.e. one reservation per user for each establishment at a day)
-    //TODO: TEST DI CON BAG AVAILABILITY (i.e. bag was available during cart but at the moment of reservation it was not available anymore)
 
+    test("should check Establishment contraint: each user can reserve just one bag per establishment at a day", async () => {
+        //make the reservation for the first bag
+        const dateRef = dayjs().format('YYYY-MM-DD'); // Use current date for createdAt
+        const reserv = {
+            userId: createdUser.id,
+            cartItem: createdCartItem,
+            createdAt: dateRef
+        }
+
+        const createdReservation = await rsRepo.createReservation(reserv);
+        expect(createdReservation).toBeDefined();
+        expect(createdReservation.id).toBeDefined();
+        expect(createdReservation.userId).toBe(createdUser.id); // Check if the reservation is associated with the correct user
+        expect(createdReservation.cartItem.id).toBe(createdCartItem.id);
+
+        //another bag of the same establishment
+        const bagSameEst = {
+            bagType: 'regular',
+            estId: createdEstablishment.id, 
+            size: 'medium',
+            tags: 'gluten free, lactose free',
+            price: 10.99,
+            items: null, 
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: true
+        }
+        const createdBagSameEst = await bagsRepo.createBag(bagSameEst);
+
+        //simulate a second reservation (without actualy committing it to the db)
+        const reservSameEst = {
+            userId: createdUser.id,
+            cartItem: {
+                id: null, // Set to null for simulation
+                bag: createdBagSameEst,
+                removedItems: [] 
+            },
+            createdAt: dateRef
+        }
+
+
+        //test the function: checkEstablishmentContraint(userId, createdAt, estId)
+        const check = await rsRepo.checkEstablishmentContraint(createdUser.id, reservSameEst.createdAt, createdEstablishment.id);
+        //TRUE is the user has a reservation for the same establishment at the same day
+        //FALSE otherwise
+        //in this case it should be TRUE
+        expect(check).toBe(true); // User has a reservation for the same establishment at the same day
+
+
+        //Now create a second est
+        const est2 = {
+            name: 'Test Establishment 2',
+            bags: [], // Initially no bags
+            estType: 'Restaurant',
+            address: '123 Test St 2'
+        }
+
+        const createdEstablishment2 = await establishmentRepo.createEstablishment(est2);
+        expect(createdEstablishment2).toBeDefined();
+        expect(createdEstablishment2.id).toBeDefined();
+
+
+        //change the est of the second bag to the new one
+        bagSameEst.estId = createdEstablishment2.id;
+        const createdBagSameEst2 = await bagsRepo.createBag(bagSameEst);
+        expect(createdBagSameEst2).toBeDefined();
+        expect(createdBagSameEst2.id).toBeDefined();
+        expect(createdBagSameEst2.estId).toBe(createdEstablishment2.id);
+
+        //Now make again a second reservation for the second bag without actually committing it to the db
+        const reservSameEst2 = {
+            userId: createdUser.id,
+            cartItem: {
+                id: null, // Set to null for simulation
+                bag: createdBagSameEst2,
+                removedItems: [] 
+            },
+            createdAt: dateRef
+        }
+
+        //let's check the constraint in this case
+        const check2 = await rsRepo.checkEstablishmentContraint(createdUser.id, reservSameEst2.createdAt, createdEstablishment2.id);
+        //it should be FALSE this time since the user has no reservation for the second establishment at the same day
+        expect(check2).toBe(false); 
+    });
+
+    //TODO: TEST DI CON BAG AVAILABILITY (i.e. bag was available during cart but at the moment of reservation it was not available anymore)
 
 });
 
