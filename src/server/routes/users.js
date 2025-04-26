@@ -77,7 +77,7 @@ export function createUsersRouter({ userRepo }) {
         if (newPassword) {
             try {
                 const fecthedUser = await userRepo.getUserById(id);
-
+                console.log("fecthedUser: ", fecthedUser);
                 if (fecthedUser) {
                     //user fecthed correctly -> compare passwords
                     //use bcrypt.compare: first arg is the plainText password,, second arg is the crypted password stored in the db
@@ -155,7 +155,7 @@ export function createUsersRouter({ userRepo }) {
 
         try {
             const user = await userRepo.deleteUser(id);
-            if (!res){
+            if (!user){
                 //if user is null -> user deleted
                 return res.status(HttpStatusCodes.OK).json({ success: "User deleted successfully!"});
             }
@@ -163,7 +163,7 @@ export function createUsersRouter({ userRepo }) {
             //if user is not null -> user not deleted
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to delete the user!" });
         } catch (error) {
-            return res.status(HttpStatusCodes.NOT_FOUND).json({ error: "Error: it's not possible to delete the user!" });
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to delete the user!" });
         }
     });
 

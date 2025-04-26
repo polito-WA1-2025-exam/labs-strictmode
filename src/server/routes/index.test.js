@@ -77,6 +77,7 @@ describe('Users Router', () => {
                 .send(newUser);
 
             expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
             expect(response.body.error).toBe("Error: invalid email address!");
 
 
@@ -87,6 +88,7 @@ describe('Users Router', () => {
                 .send(newUser);
 
             expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
             expect(response2.body.error).toBe("Error: invalid email address!");
 
 
@@ -106,6 +108,7 @@ describe('Users Router', () => {
                 .send(newUser);
 
             expect(response4.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
             expect(response4.body.error).toBe("Error: invalid email address!");
 
         });
@@ -134,6 +137,7 @@ describe('Users Router', () => {
                 .send(newUser);
 
             expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
             expect(response2.body.error).toBe("Error: invalid assigned name!");
 
         });
@@ -162,11 +166,31 @@ describe('Users Router', () => {
                 .send(newUser);
 
             expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
             expect(response2.body.error).toBe("Error: invalid family name!");
 
         });
     });
 
+    test("POST /users - INTERNAL SERVER ERROR", async () => {
+        //userRepo.updateUser(existentUser) PROMISE REJECTED
+        mockUserRepo.createUser.mockRejectedValue(new Error("Database error"));
+
+        let requestBody = {
+            email: "prova@mail.com",
+            assignedName: "prova",
+            familyName: "prova",
+            password: "pass",  
+        };
+
+        const response = await request(app)
+            .post('/users')
+            .send(requestBody);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to create the user!");
+    });
 
     describe('PUT /users/:id - update a user', () => {
 
@@ -246,6 +270,219 @@ describe('Users Router', () => {
 
 
     }, 10000); //timeout increased just to be sure since the test is long
+
+
+    describe('PUT /users/:id - BAD REQUEST Errors', () => {
+        test('invalid user email', async () => {
+
+
+            const requestBody = {
+                email: "prova#mail.com",
+                assignedName: "Error 404",
+                familyName: "Unexisting",
+                password: "pass",  
+            };
+
+            const response = await request(app)
+                .put('/users/999') 
+                .send(requestBody);
+            
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid email address!");
+
+
+        });
+
+        test('invalid user assignedName', async () => {
+            let requestBody = {
+                email: "prova@mail.com",
+                assignedName: "",
+                familyName: "Unexisting",
+                password: "pass",  
+            };
+
+            const response = await request(app)
+                .put('/users/999') 
+                .send(requestBody);
+            
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body.error).toBe("Error: invalid assigned name!");
+
+
+            requestBody.assignedName = "a".repeat(101); // 101 characters
+            const response2 = await request(app)
+                .put('/users/999') 
+                .send(requestBody);
+
+            expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response2.body.error).toBe("Error: invalid assigned name!");
+        });
+
+
+        test('invalid user familyName', async () => {
+            let requestBody = {
+                email: "prova@mail.com",
+                assignedName: "prova",
+                familyName: "",
+                password: "pass",  
+            };
+
+            const response = await request(app)
+                .put('/users/999') 
+                .send(requestBody);
+            
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body.error).toBe("Error: invalid family name!");
+
+
+            requestBody.familyName = "a".repeat(101); // 101 characters
+            const response2 = await request(app)
+                .put('/users/999') 
+                .send(requestBody);
+
+            expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response2.body.error).toBe("Error: invalid family name!");
+        });
+
+    });
+
+    test('PUT /users/:id - UNAUTHORIZED Error if old password is incorrect', async () => {
+        const userId = 1;
+        const oldPasswordClear = 'correctOldPassword';
+        const wrongPasswordClear = 'incorrectOldPassword'; // The incorrect password
+        const newPasswordClear = 'newPassword';
+
+        // Hash the *correct* old password as it would be stored in the DB
+        const oldPasswordHash = await hashPassword(oldPasswordClear);
+
+        // Mock getUserById to return the user with the correct hashed password
+        const fetchedUserFromDb = new User(userId, 'user@example.com', 'Test', 'User', oldPasswordHash);
+        mockUserRepo.getUserById.mockResolvedValue(fetchedUserFromDb);
+
+        const requestBody = {
+            email: 'updated@example.com', 
+            assignedName: 'Updated',
+            familyName: 'User',
+            password: wrongPasswordClear, // Provide the INCORRECT old password
+            newPassword: newPasswordClear
+        };
+
+        const response = await request(await app) 
+            .put(`/users/${userId}`)
+            .send(requestBody);
+
+        // Expect a 401 Unauthorized status code
+        expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: invalid password!");
+    });
+
+    test("PUT /users/:id - INTERNAL SERVER ERROR", async () => {
+        //userRepo.updateUser(existentUser) PROMISE REJECTED
+        mockUserRepo.updateUser.mockRejectedValue(new Error("Database error"));
+
+        let requestBody = {
+            email: "prova@mail.com",
+            assignedName: "prova",
+            familyName: "prova",
+            password: "pass",  
+        };
+
+        const response = await request(app)
+            .put('/users/999') 
+            .send(requestBody);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to update the user!");
+    });
+
+
+
+        test('GET /users/:id - get a user by id', async () => {
+            const userId = 1;
+            const returnedUser = new User(userId, 'prova@mail.com', 'prova', 'prova', 'hashedPassword');
+            mockUserRepo.getUserById.mockResolvedValue(returnedUser);
+
+            const response = await request(app)
+                .get(`/users/${userId}`);
+
+            expect(response.status).toBe(HttpStatusCodes.OK);
+            expect(response.body).toEqual(returnedUser);
+
+        });
+
+        test('GET /users/:id - BAD REQUEST Error', async () => {
+            const userId = 'invalid-id'; //it will turn out to be NaN
+            const response = await request(app)
+                .get(`/users/${userId}`);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: id is not a number!");
+        });
+
+        test('GET /users/:id - NOT FOUND Error', async () => {
+            const userId = 999; //assuming this user does not exist
+            mockUserRepo.getUserById.mockResolvedValue(null); //simulate user not found
+
+            const response = await request(app)
+                .get(`/users/${userId}`);
+
+            expect(response.status).toBe(HttpStatusCodes.NOT_FOUND);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: user not found!");
+        });
+
+
+        test('GET /users/:id - INTERNAL SERVER ERROR', async () => {
+            const userId = 1;
+            mockUserRepo.getUserById.mockRejectedValue(new Error("Database error"));
+
+            const response = await request(app)
+                .get(`/users/${userId}`);
+
+            expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: it's not possible to get the user!");
+        });
+
+        test('DELETE /users/:id - delete a user by id', async () => {
+            const userId = 1;
+            mockUserRepo.deleteUser.mockResolvedValue(null); //Simulate successful deletion
+
+            const response = await request(app)
+                .delete(`/users/${userId}`);
+
+            expect(response.status).toBe(HttpStatusCodes.OK);
+            expect(response.body).toHaveProperty('success');
+            expect(response.body.success).toBe("User deleted successfully!");
+        });
+
+        test('DELETE /users/:id - BAD REQUEST Error', async () => {
+            const userId = 'invalid-id'; //it will turn out to be NaN
+            const response = await request(app)
+                .delete(`/users/${userId}`);
+            
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: id is not a number!");
+        });
+
+        test('DELETE /users/:id - INTERNAL SERVER ERROR', async () => {
+            const userId = 1;
+            mockUserRepo.deleteUser.mockRejectedValue(new Error("Database error"));
+
+            const response = await request(app)
+                .delete(`/users/${userId}`);
+
+            expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: it's not possible to delete the user!");
+        });
 
 
 
