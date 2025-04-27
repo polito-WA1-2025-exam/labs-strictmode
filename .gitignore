@@ -2,4 +2,5 @@ node_modules/
 SurplusFood/node_modules/
 src/testDB
 src/node_modules/
-./database/reservation_system.db
+database/reservation_system.db
+.vscode/
