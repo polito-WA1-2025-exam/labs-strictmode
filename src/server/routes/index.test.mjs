@@ -1,6 +1,6 @@
 const request = require('supertest');
 import express from 'express';
-import {User, Establishment} from "../../models/index.mjs";
+import {User, Establishment, Bag, BagItem} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
 import {createUsersRouter, createEstablishmentsRouter, createBagsRouter, createReservationsRouter, createCartsRouter} from "./index.mjs";
 import { describe, test, expect, vi, beforeEach } from 'vitest';
@@ -37,7 +37,8 @@ const mockBagRepo = {
     listAvailable: vi.fn(),
     checkBagAvailable: vi.fn(),
     addItem: vi.fn(),
-    removeItem: vi.fn()
+    removeItem: vi.fn(),
+    getAllBags: vi.fn()
 };
 
 
@@ -1063,6 +1064,387 @@ describe('Bags Router', () => {
         expect(response.body).toHaveProperty('error');
         expect(response.body.error).toBe("Error: it's not possible to create the bag!");
     });
+
+    test('PUT /bags/:bagId - update a bag by id', async () => {
+        const bagId = 1;
+        const updatedBag = {
+            bagType: 'regular',
+            estId: 1,
+            size: 'large',
+            tags: 'tag2',
+            price: 15.0,
+            pickupTimeStart: dayjs().toISOString(),
+            pickupTimeEnd: dayjs().add(2, 'day').toISOString(),
+            available: false
+        };
+
+        //mock the establishmentRepo to return a valid establishment for the given estId
+        const establishment = new Establishment(updatedBag.estId, 'Test Establishment', null, 'Test Type', '123 Test St');
+        mockEstablishmentRepo.getEstablishmentById.mockResolvedValue(establishment);
+
+        //mock the bagRepo to return null (= success) when updating
+        mockBagRepo.updateBag.mockResolvedValue(null); //simulate successful update
+
+        const response = await request(app)
+            .put(`/bags/${bagId}`)
+            .send(updatedBag);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toHaveProperty('success');
+        expect(response.body.success).toBe("Bag updated successfully!");
+
+    });
+
+    test('PUT /bags/:bagId - BAD REQUEST Error - invalid bagId', async () => {
+        const bagToUpdate = {
+            bagType: 'regular',
+            estId: 1,
+            size: 'large',
+            tags: 'tag2',
+            price: 15.0,
+            pickupTimeStart: dayjs().toISOString(),
+            pickupTimeEnd: dayjs().add(2, 'day').toISOString(),
+            available: false
+        };
+
+        const bagIdNaN = 'invalid-id'; //it will turn out to be NaN
+
+        
+        const response = await request(app)
+            .put(`/bags/${bagIdNaN}`)
+            .send(bagToUpdate);
+
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: invalid bag id!");
+
+        //invaliid PUT w/out bagId param
+        const response2 = await request(app)
+            .put('/bags/')
+            .send(bagToUpdate);
+
+        expect(response2.status).toBe(HttpStatusCodes.NOT_FOUND);
+        
+
+    });
+
+    test('PUT /bags/:bagId - INTERNAL SERVER ERROR', async () => {
+        const bagId = 1;
+        const updatedBag = {
+            bagType: 'regular',
+            estId: 1,
+            size: 'large',
+            tags: 'tag2',
+            price: 15.0,
+            pickupTimeStart: dayjs().toISOString(),
+            pickupTimeEnd: dayjs().add(2, 'day').toISOString(),
+            available: false
+        };
+
+        //mock the establishmentRepo to return a valid establishment for the given estId
+        const establishment = new Establishment(updatedBag.estId, 'Test Establishment', null, 'Test Type', '123 Test St');
+        mockEstablishmentRepo.getEstablishmentById.mockResolvedValue(establishment);
+
+        //mock the bagRepo to return reject the promise when updating
+        mockBagRepo.updateBag.mockRejectedValue(new Error("Database error")); //simulate error when updating
+
+        const response = await request(app)
+            .put(`/bags/${bagId}`)
+            .send(updatedBag);
+        
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to update the bag!");
+
+
+    });
+
+
+    test("GET /bags/:bagId - get a bag by id", async () => {
+        const bagId = 1;
+        const returnedBag = new Bag(bagId, 1, 'regular', 'small', 'tag1', 10.0, dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true);
+        mockBagRepo.getBagById.mockResolvedValue(returnedBag);
+
+        const response = await request(app)
+            .get(`/bags/${bagId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toEqual(returnedBag);
+
+    });
+
+    test("GET /bags/:bagId - BAD REQUEST Error - invalid id", async () => {
+        const bagId = 'invalid-id'; //it will turn out to be NaN
+        const response = await request(app)
+            .get(`/bags/${bagId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: invalid bag id!");
+    });
+
+    test("GET /bags/:bagId - NOT FOUND Error", async () => {
+        const bagId = 999; //assuming this bag does not exist
+        mockBagRepo.getBagById.mockResolvedValue(null); //simulate bag not found
+
+        const response = await request(app)
+            .get(`/bags/${bagId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.NOT_FOUND);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: Bag not found!");
+    });
+
+    test("GET /bags/:bagId - INTERNAL SERVER ERROR", async () => {
+        const bagId = 1;
+        mockBagRepo.getBagById.mockRejectedValue(new Error("Database error"));
+
+        const response = await request(app)
+            .get(`/bags/${bagId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to get the bag!");
+    });
+
+
+    test("GET /bags - get all available bags", async () => {
+        let bags = [
+            new Bag(1, 1, 'regular', 'small', 'tag1', 10.0, dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true),
+            new Bag(2, 1, 'express', 'large', 'tag2', 20.0, dayjs().toISOString(), dayjs().add(2, 'day').toISOString(), true)
+        ];
+        mockBagRepo.listAvailable.mockResolvedValue(bags);
+
+        const response = await request(app)
+            .get('/bags/');
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toEqual(bags);
+
+        //Verify correct repo method was called
+        expect(mockBagRepo.listAvailable).toHaveBeenCalled(); // Ensure listAvailable was called
+
+        expect(mockBagRepo.getBagById).not.toHaveBeenCalled(); // Ensure getBagById was NOT called
+
+
+        bags[0].available = false; // Set the first bag to not available
+
+        mockBagRepo.listAvailable.mockResolvedValue([bags[1]]); // Mock the repository to return only the second bag
+        const response2 = await request(app)
+            .get('/bags/');
+
+        expect(response2.status).toBe(HttpStatusCodes.OK);
+        expect(response2.body).toEqual([bags[1]]); // Check that only the available bag is returned
+
+        expect(mockBagRepo.listAvailable).toHaveBeenCalled(); // Ensure listAvailable was called again
+
+        expect(mockBagRepo.getBagById).not.toHaveBeenCalled(); // Ensure getBagById was NOT called again
+
+    });
+
+    test("GET /bags?estId=X - get all bags of establishment having X as its id", async () => {
+        const estId = 1;
+        const bags = [
+            // Ensure bags have the correct estId property
+            new Bag(1, estId, 'regular', 'small', 'tag1', 10.0, dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true),
+            new Bag(2, estId, 'express', 'large', 'tag2', 20.0, dayjs().toISOString(), dayjs().add(2, 'day').toISOString(), true)
+        ];
+
+        // Mock the repository method that the router.get("/") handler calls
+        // when the estId query parameter is present.
+        mockBagRepo.getBagListByEstId.mockResolvedValue(bags);
+
+
+        const response = await request(await app) 
+            .get('/bags') // Base path
+            .query({ estId: estId }); // Add query parameter
+        
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toEqual(bags);
+
+        //Verify correct repo method was called
+        const establishment = new Establishment(estId, null, null, null);
+        expect(mockBagRepo.getBagListByEstId).toHaveBeenCalledWith(establishment); 
+
+        expect(mockBagRepo.listAvailable).not.toHaveBeenCalled(); // Ensure listAvailable was NOT called
+        expect(mockBagRepo.getBagById).not.toHaveBeenCalled(); // Ensure getBagById was NOT called
+    });
+
+    test("BagItem - POST /bags/:bagId/item - create a new bag item for bag having id :bagId", async () => {
+        const validBagId = 1;
+        //id, bagId, name, quantity, measurementUnit
+        const validBagItemPayload = new BagItem(null, validBagId, 'Apple', 1, 'kg'); 
+
+        const createdBagItem = { id: 1, ...validBagItemPayload };
+        mockBagRepo.addItem.mockResolvedValue(createdBagItem); // Simulate successful creation
+
+        const requestBody = {
+            name: validBagItemPayload.name,
+            quantity: validBagItemPayload.quantity,
+            measurementUnit: validBagItemPayload.measurementUnit
+        };
+
+        const response = await request(await app)
+            .post(`/bags/${validBagId}/item`)
+            .send(validBagItemPayload);
+
+        expect(response.status).toBe(HttpStatusCodes.CREATED);
+        expect(response.body).toEqual(createdBagItem); // Check the response body -> the created bag item MUST HAVE THE ID
+
+
+        expect(mockBagRepo.addItem).toHaveBeenCalledWith(validBagId, validBagItemPayload); // Check that the repository method was called with the correct parameters
+
+    });
+
+
+    describe('BagItem - POST /bags/:bagId/item - BAD REQUEST Errors', () => {
+
+        const validBagId = 1;
+        const validBagItemPayload = {
+            id: 101,
+            name: 'Apple',
+            quantity: 1
+        };
+
+
+        test('invalid bagId in route parameter', async () => {
+            const invalidBagId = 'not-a-bag-id';
+            const bagItemPayload = { id: 1, name: 'Item', quantity: 1 };
+
+            const response = await request(await app)
+                .post(`/bags/${invalidBagId}/item`)
+                .send(bagItemPayload);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: invalid bag id!');
+            expect(mockBagRepo.addItem).not.toHaveBeenCalled(); // Repo method should not be called
+        });
+
+        test('invalid item name (empty string)', async () => {
+            const invalidBagItemPayload = { ...validBagItemPayload, name: '' }; // Empty name
+
+            const response = await request(await app)
+                .post(`/bags/${validBagId}/item`)
+                .send(invalidBagItemPayload);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: invalid item name!');
+            expect(mockBagRepo.addItem).not.toHaveBeenCalled();
+        });
+
+         test('invalid item name (not a string)', async () => {
+            const invalidBagItemPayload = { ...validBagItemPayload, name: 123 }; // Not a string
+
+            const response = await request(await app)
+                .post(`/bags/${validBagId}/item`)
+                .send(invalidBagItemPayload);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: invalid item name!');
+            expect(mockBagRepo.addItem).not.toHaveBeenCalled();
+        });
+
+
+        test('invalid item quantity (not a number)', async () => {
+            const invalidBagItemPayload = { ...validBagItemPayload, quantity: 'three' }; // Not a number
+
+            const response = await request(await app)
+                .post(`/bags/${validBagId}/item`)
+                .send(invalidBagItemPayload);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: invalid item quantity!');
+            expect(mockBagRepo.addItem).not.toHaveBeenCalled();
+        });
+
+         test('invalid item quantity (zero or negative)', async () => {
+            const invalidBagItemPayload = { ...validBagItemPayload, quantity: 0 }; // Zero quantity
+
+            const response = await request(await app)
+                .post(`/bags/${validBagId}/item`)
+                .send(invalidBagItemPayload);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: invalid item quantity!');
+            expect(mockBagRepo.addItem).not.toHaveBeenCalled();
+
+            const invalidBagItemPayload2 = { ...validBagItemPayload, quantity: -1 }; // Negative quantity
+             const response2 = await request(await app)
+                .post(`/bags/${validBagId}/item`)
+                .send(invalidBagItemPayload2);
+
+            expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response2.body).toHaveProperty('error', 'Error: invalid item quantity!');
+            expect(mockBagRepo.addItem).not.toHaveBeenCalled();
+        });
+    });
+
+    test('BagItem - POST /bags/:bagId/item - INTERNAL SERVER ERROR', async () => {
+        const validBagId = 1;
+        const validBagItemPayload = {
+            id: 101,
+            name: 'Apple',
+            quantity: 1
+        };
+
+        mockBagRepo.addItem.mockRejectedValue(new Error("Database error")); // Simulate error
+
+        const response = await request(await app)
+            .post(`/bags/${validBagId}/item`)
+            .send(validBagItemPayload);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to add the item to the bag!");
+    });
+
+    test('BagItem - DELETE /bags/item/:itemId - delete a bag item by id', async () => {
+        const bagId = 1;
+        const itemId = 101;
+
+        mockBagRepo.removeItem.mockResolvedValue(null); // Simulate successful deletion
+
+        const response = await request(await app)
+            .delete(`/bags/item/${itemId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toHaveProperty('success');
+        expect(response.body.success).toBe("Bag item deleted successfully!");
+    });
+
+
+
+        test('BagItem - DELETE /bags/item/:itemId - BAD_REQUEST - invalid itemId format in route parameter', async () => {
+            const invalidItemId = 'not-a-number';
+    
+            const response = await request(await app) // Assuming 'app' is the Express app instance from beforeEach
+                .delete(`/bags/item/${invalidItemId}`); // Adjust path if your router is mounted differently (e.g., just `/item/${invalidItemId}`)
+    
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: invalid bag item id!'); // Adjust error message if different
+            expect(mockBagRepo.removeItem).not.toHaveBeenCalled(); // Repo method should not be called
+        });
+    
+        test('BagItem - DELETE /bags/item/:itemId - INTERNAL_SERVER_ERROR', async () => {
+            const itemId = 123; // A valid item ID format
+    
+            // Mock removeItem to throw an error
+            const repoError = new Error('Database error during item removal');
+            mockBagRepo.removeItem.mockRejectedValue(repoError); // Use mockRejectedValue for async errors
+    
+            const response = await request(await app) // Assuming 'app' is the Express app instance
+                .delete(`/bags/item/${itemId}`); // Adjust path if different
+    
+            expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+            expect(response.body).toHaveProperty('error', "Error: it's not possible to remove the bag item from the bag!"); // Adjust error message if different
+            // Verify bagRepo.removeItem was called before it failed
+            expect(mockBagRepo.removeItem).toHaveBeenCalledWith(itemId);
+        });
+    
+    
+    
+
     
 
 });

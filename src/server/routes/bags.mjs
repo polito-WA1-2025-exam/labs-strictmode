@@ -104,7 +104,7 @@ export function createBagsRouter({bagRepo, estRepo}) {
     router.get("/", async (req, res) => {
         //get estId and convert it to number
         const queryEstId = req.query.estId;
-       
+        console.log("queryEstId", queryEstId);
 
 
         //case1: if no query parameter is passed
@@ -118,6 +118,7 @@ export function createBagsRouter({bagRepo, estRepo}) {
                 }
                 return res.status(HttpStatusCodes.OK).json(bags);
             } catch (error){
+                console.error("Error retrieving bags:", error);
                 return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "It's not possible to list the bags!" });
             }
         } else {
@@ -133,12 +134,13 @@ export function createBagsRouter({bagRepo, estRepo}) {
                 }
 
                 const establishment = new Establishment(estId, null, null, null);
-                const bags = await bagRepo.getBagsByEstId(establishment);
+                const bags = await bagRepo.getBagListByEstId(establishment);
                 if (!bags){
                     return res.status(HttpStatusCodes.NOT_FOUND).json({ error: `Bags for establishment ${estId} not found!` });
                 }
                 return res.status(HttpStatusCodes.OK).json(bags);
             } catch (error) {
+                console.error("Error retrieving bags2:", error);
                 return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: It's not possible to retrieve the bag!" });
             }
         }
@@ -162,7 +164,6 @@ export function createBagsRouter({bagRepo, estRepo}) {
             return res.status(HttpStatusCodes.CREATED).json(res_);
         
         } catch (error) {
-            console.error("Error creating bag:", error);
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to create the bag!" });
         }
     });
@@ -177,7 +178,7 @@ export function createBagsRouter({bagRepo, estRepo}) {
                 return res.status(HttpStatusCodes.BAD_REQUEST).json({ error: "Error: invalid bag id!" });
             }
 
-            const bag = await bagRepo.getBag(bagId);
+            const bag = await bagRepo.getBagById(bagId);
             if (!bag){
                 //if bag is null -> bag not found
                 return res.status(HttpStatusCodes.NOT_FOUND).json({ error: "Error: Bag not found!" });
@@ -186,14 +187,18 @@ export function createBagsRouter({bagRepo, estRepo}) {
             //if bag is not null -> bag found
             return res.status(HttpStatusCodes.OK).json(bag);
         } catch (error) {
-            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: Server error!" });
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to get the bag!" });
         }
     });
 
 
     //update bag
-    router.put(":/bagId", async (res, req) => {
-        const { bagId, bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available } = req.body;
+    router.put("/:bagId", async (req, res) => {
+        const {bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available } = req.body;
+        const bagId = req.params.bagId;
+        if (!bagId){
+            return res.status(HttpStatusCodes.BAD_REQUEST).json({ error: "Error: invalid bag id!" });
+        }
         
         const checkParamsResult = await checkBagParams(bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available, estRepo, bagId);
         if (checkParamsResult) {
@@ -203,12 +208,13 @@ export function createBagsRouter({bagRepo, estRepo}) {
         //this gets executed only if all the params are valid, i.e. checkParamsResult is null
 
         try {
+            console.log("bagId", bagId);
             const bagToUpdate = new Bag(parseInt(bagId), bagType, parseInt(estId), size, tags, parseFloat(price), pickupTimeStart, pickupTimeEnd, available);
-            const res = await bagRepo.updateBag(bagToUpdate);
+            const updateRes = await bagRepo.updateBag(bagToUpdate);
 
-            if (!res){
+            if (!updateRes){
                 //if res is null -> update succesful
-                return res.status(HttpStatusCodes.OK).json({success: "Bag updated succesfully!"})
+                return res.status(HttpStatusCodes.OK).json({success: "Bag updated successfully!"})
             }
 
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({error: "Error: it's not possible to update the bag!"})
@@ -219,8 +225,10 @@ export function createBagsRouter({bagRepo, estRepo}) {
 
 
     //add item to a bag
-    router.post("/item", async (req, res) => {
-        const { bagId, id, name, quantity } = req.body;
+    router.post("/:bagId/item", async (req, res) => {
+        //id, bagId, name, quantity, measurementUnit
+        const { name, quantity, measurementUnit } = req.body;
+        const bagId = req.params.bagId;
 
         //check bagId is valid
         const bagId_ = parseInt(bagId);
@@ -229,10 +237,12 @@ export function createBagsRouter({bagRepo, estRepo}) {
         }
 
         //check id is valid
+        /*
         const id_ = parseInt(id);
         if (isNaN(id_)){
             return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid item id!"});
         }
+        */
 
         //check name is valid
         if (!isValidString(name)){
@@ -250,10 +260,13 @@ export function createBagsRouter({bagRepo, estRepo}) {
         }
 
         try {
-            const bagItem = new BagItem(id_, name, quantity_);
+            //bagRepo.addItem will use: bagItem.bagId, bagItem.name, bagItem.quantity, bagItem.measurementUnit
+            ////id, bagId, name, quantity, measurementUnit
+            const bagItem = new BagItem(null, bagId_, name, quantity_, measurementUnit);
             const res_ = await bagRepo.addItem(bagId_, bagItem);
-            return res.status(HttpStatusCodes.OK).json(res_);
+            return res.status(HttpStatusCodes.CREATED).json(res_);
         } catch (error) {
+            console.error("Error adding item to bag:", error);
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to add the item to the bag!" });
         }
 
@@ -261,25 +274,26 @@ export function createBagsRouter({bagRepo, estRepo}) {
     });
 
     //delete an item from a bag
-    //++ DA AGGIORNARE DB REPO ++
-    router.delete("/item", async (req, res) => {
-        itemId = parseInt(req.params.itemId);
+    router.delete("/item/:itemId", async (req, res) => {
+        const itemId = parseInt(req.params.itemId);
         if (isNaN(itemId)){
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid item id!"});
+            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid bag item id!"});
         }
 
         try {
-            const res = await bagRepo.removeItem(itemId);
-            if (!res){
-                return res.status(HttpStatusCodes.OK).json({success: "Item removed successfully!"});
+            const deletionRes = await bagRepo.removeItem(itemId);
+            if (!deletionRes){
+                return res.status(HttpStatusCodes.OK).json({success: "Bag item deleted successfully!"});
             }
 
-            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({error: "Error: it's not possible to remove the item from the bag!"});
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({error: "Error: it's not possible to remove the bag item from the bag!"});
         } catch (error) {
-            return res.status(HttpStatusCodes.NOT_FOUND).json({ error: "Error: it's not possible to remove the item from the bag!" });
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to remove the bag item from the bag!" });
         }
 
     });
+
+    
 
     return router;
 }
