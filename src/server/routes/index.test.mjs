@@ -1,6 +1,6 @@
 const request = require('supertest');
 import express from 'express';
-import {User, Establishment, Bag, BagItem} from "../../models/index.mjs";
+import {User, Establishment, Bag, BagItem, CartItem} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
 import {createUsersRouter, createEstablishmentsRouter, createBagsRouter, createReservationsRouter, createCartsRouter} from "./index.mjs";
 import { describe, test, expect, vi, beforeEach } from 'vitest';
@@ -40,6 +40,13 @@ const mockBagRepo = {
     removeItem: vi.fn(),
     getAllBags: vi.fn()
 };
+//Mock the cartRepo
+const mockCartRepo = {
+    getCartByUserId: vi.fn(),
+    addBag: vi.fn(),
+    removeBag: vi.fn(),
+    personalizeBag: vi.fn()
+};
 
 
 function setupApp() {
@@ -48,9 +55,11 @@ function setupApp() {
     const userRouter = createUsersRouter({ userRepo: mockUserRepo });
     const establishmentRouter = createEstablishmentsRouter({ estRepo: mockEstablishmentRepo });
     const bagRouter = createBagsRouter({ bagRepo: mockBagRepo, estRepo: mockEstablishmentRepo });
+    const cartRouter = createCartsRouter({ cartRepo: mockCartRepo, bagRepo: mockBagRepo });
     app.use('/users', userRouter);
     app.use('/establishments', establishmentRouter);
     app.use('/bags', bagRouter);
+    app.use('/carts', cartRouter);
 
     return app;
 }
@@ -764,6 +773,9 @@ describe('Bags Router', () => {
         //check response body
         expect(response.body).toEqual(createdBag);
     });
+
+});
+    
     
 
     describe('POST /bags - BAD REQUEST Errors', () => {
@@ -1446,5 +1458,425 @@ describe('Bags Router', () => {
     
 
     
+
+
+describe('Carts Router', () => {
+
+    test('POST /carts/:userId/bags - add a bag to the cart', async () => {
+        const bagId = 1;
+        const userId = 1;
+        const estId = 1;
+
+        //mock bagRepo.getBagById to return a valid bag
+        //id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+        const bag = new Bag(bagId, 'regular', estId, 'small', 'tag1', 10.0, [], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true);
+        mockBagRepo.getBagById.mockResolvedValue(bag);
+
+        //mock cartRepo.addBag to return a valid cartItem
+        //for now the users doesn't remove bagItems from the bag
+        //id, bag, userId, removed = []
+        const cartItem = new CartItem(1, bag, userId, []);
+        mockCartRepo.addBag.mockResolvedValue(cartItem); // Simulate successful addition
+
+        const response = await request(await app)
+            .post(`/carts/${userId}/bags`)
+            .send({ bagId: bagId });
+
+        //since the objects are collapsed (i.e. we don't have bag: Bag {..} but just bag: {...}), we need to mock the response as well
+        const cartItemCollapsed = {
+            id: 1,
+            bag: {
+              id: 1,
+              bagType: 'regular',
+              estId: 1,
+              size: 'small',
+              tags: 'tag1',
+              price: 10,
+              items: [],
+              pickupTimeStart: bag.pickupTimeStart, // Use the same date as the bag
+              pickupTimeEnd: bag.pickupTimeEnd, // Use the same date as the bag
+              available: true
+            },
+            userId: 1,
+            removedItems: [],
+            addedAt: expect.any(String) //since this varies every time
+          };
+
+        expect(response.status).toBe(HttpStatusCodes.CREATED);
+        expect(response.body).toEqual(cartItemCollapsed); // Check the response body
+
+        expect(response.body.addedAt).toBeDefined(); // Check that addedAt is defined
+        expect(response.body.addedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/); // Check that addedAt is in ISO format and so it's a valid date
+
+
+    });
+
+    test('POST /carts/:userId/bags - FORBIDDEN: bag is not available', async () => {
+        const userId = 1;
+        const bagId = 1;
+
+        // Mock the bagRepo.getBagById to return a bag that is not available
+        const bag = new Bag(bagId, 'regular', 1, 'small', 'tag1', 10.0, [], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), false);
+        mockBagRepo.getBagById.mockResolvedValue(bag);
+
+        const response = await request(await app)
+            .post(`/carts/${userId}/bags`)
+            .send({ bagId: bagId });
+
+        expect(response.status).toBe(HttpStatusCodes.FORBIDDEN);
+        expect(response.body).toHaveProperty('error', 'Error: bag is not available!'); 
+
+    });
+
+    test("POST /carts/:userId/:bagId - FORBIDDEN: user is trying to add a bag of the same estType of other bags in the cart at the same day", async () => {
+        const userId = 1;
+        const bagId = 1;
+        const estId = 1;
+
+        // Mock the bagRepo.getBagById to return a valid bag
+        const bag = new Bag(bagId, 'regular', estId, 'small', 'tag1', 10.0, [], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true);
+        mockBagRepo.getBagById.mockResolvedValue(bag);
+
+        // Mock the cartRepo.addBag to throw an error if the user tries to add a bag of the same estType of other bags in the cart at the same day
+        mockCartRepo.addBag.mockRejectedValue(new Error("You have already added a bag from this establishment today. Please try again tomorrow.")); // Simulate error
+
+        const response = await request(await app)
+            .post(`/carts/${userId}/bags`)
+            .send({ bagId: bagId });
+
+        expect(response.status).toBe(HttpStatusCodes.FORBIDDEN);
+        expect(response.body).toHaveProperty('error', 'Error: You have already added a bag from this establishment today. Please try again tomorrow.'); 
+
+    });
+
+
+    test('POST /carts/:userId/bags - BAD REQUEST - invalid userId', async () => {
+        const invalidUserId = 'invalid-id'; // it will turn out to be NaN
+        const bagId = 1;
+        const response = await request(await app)
+            .post(`/carts/${invalidUserId}/bags`)
+            .send({ bagId: bagId });
+        
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error', 'Error: invalid userId!'); 
+    });
+
+    test('POST /carts/:userId/bags - BAD REQUEST - invalid bagId', async () => {
+        const userId = 1;
+        const invalidBagId = 'invalid-id'; // it will turn out to be NaN
+        const response = await request(await app)
+            .post(`/carts/${userId}/bags`)
+            .send({ bagId: invalidBagId });
+
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error', 'Error: invalid bagId!'); 
+    });
+
+
+    test("POST /cart/:userId/bagss - NOT FOUND - bag not found", async () => {
+
+        //Mock bagRepo.getBagById to return null (bag not found)
+        mockBagRepo.getBagById.mockResolvedValue(null); //Simulate bag not found
+
+        const userId = 1;
+        const bagId = 999; //Assuming this bag does not exist!!
+
+        const response = await request(await app)
+            .post(`/carts/${userId}/bags`)
+            .send({ bagId: bagId });
+
+        expect(response.status).toBe(HttpStatusCodes.NOT_FOUND);
+        expect(response.body).toHaveProperty('error', 'Error: bag not found!'); 
+
+    });
+
+    test("POST /carts/:userId/bags - INTERNAL SERVER ERROR", async () => {
+        const userId = 1;
+        const bagId = 1;
+
+        //Mock bagRepo.getBagById to return a valid bag
+        const bag = new Bag(bagId, 'regular', 1, 'small', 'tag1', 10.0, [], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true);
+        mockBagRepo.getBagById.mockResolvedValue(bag);
+
+        //Mock cartRepo.addBag to throw an error
+        mockCartRepo.addBag.mockRejectedValue(new Error("Database error")); // Simulate error
+
+        const response = await request(await app)
+            .post(`/carts/${userId}/bags`)
+            .send({ bagId: bagId });
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error', "Error: it's not possible to add the bag to the cart!"); 
+
+    });
+
+
+    test("DELETE /carts/:userId/bags - remove a bag from the cart", async () => {
+        const userId = 1;
+        const bagId = 1;
+
+        //Mock cartRepo.removeBag to return null (success)
+        mockCartRepo.removeBag.mockResolvedValue(null); // Simulate successful removal
+
+        const response = await request(await app)
+            .delete(`/carts/${userId}/bags/${bagId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toHaveProperty('success', 'Bag removed successfully!'); 
+
+    });
+
+    test("DELETE /carts/:userId/bags - BAD REQUEST - invalid userId", async () => {
+        const invalidUserId = 'invalid-id'; // it will turn out to be NaN
+        const bagId = 1;
+        const response = await request(await app)
+            .delete(`/carts/${invalidUserId}/bags/${bagId}`);
+        
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error', 'Error: userId is not a number!');
+    });
+
+    test("DELETE /carts/:userId/bags - BAD REQUEST - invalid bagId", async () => {
+        const userId = 1;
+        const invalidBagId = 'invalid-id'; // it will turn out to be NaN
+        const response = await request(await app)
+            .delete(`/carts/${userId}/bags/${invalidBagId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error', 'Error: bagId is not a number!'); 
+    });
+
+    test("DELETE /carts/:userId/bags - INTERNAL SERVER ERROR", async () => {
+        const userId = 1;
+        const bagId = 1;
+
+        //Mock cartRepo.removeBag to throw an error
+        mockCartRepo.removeBag.mockRejectedValue(new Error("Database error")); // Simulate error
+
+        const response = await request(await app)
+            .delete(`/carts/${userId}/bags/${bagId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error', "Error: cannot delete bag!"); 
+
+    });
+
+
+    test("POST /:userId/personalize/:bagId - personalize a bag", async () => {
+        const userId = 1;
+        const bagId = 1;
+        const removedItems = [1, 2]; // Example removed items
+
+        // Mock the bagRepo.getBagById to return a valid bag
+        const bagItem1 = new BagItem(1, bagId, 'item1', 1, 'kg');
+        const bagItem2 = new BagItem(2, bagId, 'item2', 2, 'kg');
+        const bag = new Bag(bagId, 'regular', 1, 'small', 'tag1', 10.0, [bagItem1, bagItem2], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true);
+        mockBagRepo.getBagById.mockResolvedValue(bag);
+
+        // Mock the cartRepo.personalizeBag to return a success message
+        mockCartRepo.personalizeBag.mockResolvedValue(null);
+
+        const response = await request(await app)
+            .post(`/carts/${userId}/personalize/${bagId}`)
+            .send({ removedItems: removedItems });
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toHaveProperty('success', 'Bag personalized successfully!'); 
+
+    });
+
+    test("POST /:userId/personalize/:bagId - BAD REQUEST - invalid userId", async () => {
+        const invalidUserId = 'invalid-id'; // it will turn out to be NaN
+        const bagId = 1;
+
+        const removedItems = [1, 2]; // Example removed items
+
+        const response = await request(await app)
+            .post(`/carts/${invalidUserId}/personalize/${bagId}`)
+            .send({ removedItems: removedItems });
+
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error', 'Error: userId is not a number!');
+    });
+
+    test("POST /:userId/personalize/:bagId - BAD REQUEST - invalid bagId", async () => {
+        const userId = 1;
+        const invalidBagId = 'invalid-id'; // it will turn out to be NaN
+
+        const removedItems = [1, 2]; // Example removed items
+
+        const response = await request(await app)
+            .post(`/carts/${userId}/personalize/${invalidBagId}`)
+            .send({ removedItems: removedItems });
+
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error', 'Error: bagId is not a number!'); 
+    });
+
+    describe("POST /:userId/personalize/:bagId - BAD REQUEST - invalid removedItems", () => {
+        const userId = 1;
+        const bagId = 1;
+
+        test("removedItems is not an array", async () => {
+            const removedItems = 'not-an-array'; // Not an array
+
+            const response = await request(await app)
+                .post(`/carts/${userId}/personalize/${bagId}`)
+                .send({ removedItems: removedItems });
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: removedItems must be an array!'); 
+        });
+
+        test("removedItems is an empty array", async () => {
+            const removedItems = []; // Empty array
+
+            const response = await request(await app)
+                .post(`/carts/${userId}/personalize/${bagId}`)
+                .send({ removedItems: removedItems });
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: removedItems is an empty array! You must specify at least one item to remove.'); 
+        });
+
+        test("removedItems contains non-numeric values", async () => {
+            const removedItems = [1, 'not-a-number', 3]; // Contains a non-numeric value
+
+            const response = await request(await app)
+                .post(`/carts/${userId}/personalize/${bagId}`)
+                .send({ removedItems: removedItems });
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: all items in removedItems must be valid item IDs!'); 
+        });
+
+
+    });
+
+    describe("POST /:userId/personalize/:bagId - Enforce Constraints", () => {
+
+        test("A non-regular bag cannot be personalized", async () => {
+            //cartRepo.personalizeBag should throw an error if the bag is not a regular bag
+            //specifically: if (cartItem.bag.bagType !== Bag.TYPE_REGULAR) throw new Error('A non-regular bag cannot be personalized');
+            //we have to mock this behavior
+            //the simplest way is to say to the mock implementation to throw an error if the bag is not a regular bag
+            mockCartRepo.personalizeBag.mockImplementation((userId, bagId, removedItems) => {
+                //Simulate cartItem retrieval
+                const cartItem = {
+                    bag: {
+                        bagType: 'surprise' // Simulate a non-regular bag type
+                    }
+                };
+
+                //Simulate the condition of a non-regular bag -> it goes AGAINST the constraint!
+                //this is the real piece of code in the repo!
+                if (cartItem.bag.bagType !== Bag.TYPE_REGULAR) throw new Error('A non-regular bag cannot be personalized');
+
+                return null; // Simulate success for regular bags -> IF THIS LINE IS REACHED, THERE'S A PROBLEM!
+            });
+
+            const userId = 1;
+            const bagId = 1;
+            const removedItems = [1, 2]; // Example removed items
+
+            const bagItem1 = new BagItem(1, bagId, 'item1', 1, 'kg');
+            const bagItem2 = new BagItem(2, bagId, 'item2', 2, 'kg');
+            //SURPRISE BAG
+            const bag = new Bag(bagId, 'surprise', 1, 'small', 'tag1', 10.0, [bagItem1, bagItem2], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true);
+
+            mockBagRepo.getBagById.mockResolvedValue(bag); // Mock the bag to be a surprise bag
+
+            const response = await request(await app)
+                .post(`/carts/${userId}/personalize/${bagId}`)
+                .send({ removedItems: removedItems });
+
+            //IT HAS TO RETURN: FORBIDDEN (403)
+            expect(response.status).toBe(HttpStatusCodes.FORBIDDEN);
+            expect(response.body).toHaveProperty('error', 'Error: A non-regular bag cannot be personalized'); // Check the error message
+
+        });
+
+
+        test("Cannot remove more than 2 items from the bag!", async () => {
+            //cartRepo.personalizeBag should throw an error if the user tries to remove more than 2 items
+            //specifically: if (removedItems.length > 2) throw new Error('Cannot remove more than 2 items from the bag!');
+            //we have to mock this behavior
+            //the simplest way is to say to the mock implementation to throw an error if the user tries to remove more than 2 items
+            mockCartRepo.personalizeBag.mockImplementation((userId, bagId, removedItems) => {
+                //Simulate cartItem retrieval
+                const cartItem = {
+                    bag: {
+                        bagType: 'regular' //Simulate a regular bag type
+                    }
+                };
+                //Simulate the condition of removing more than 2 items -> it goes AGAINST the constraint!
+                //this is the real piece of code in the repo!
+                if (removedItems.length > 2) throw new Error('Cannot remove more than 2 items from the bag!');
+
+                return null; // Simulate success for regular bags -> IF THIS LINE IS REACHED, THERE'S A PROBLEM!
+            });
+            
+            const userId = 1;
+            const bagId = 1;
+            const removedItems = [1, 2, 3]; // Example removed items (more than 2)
+
+            const response = await request(await app)
+                .post(`/carts/${userId}/personalize/${bagId}`)
+                .send({ removedItems: removedItems });
+
+            //IT HAS TO RETURN: BAD REQUEST (400)
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: Cannot remove more than 2 items from the bag!'); // Check the error message
+
+        });
+
+
+        test("Item with ID X is not in the bag", async () => {
+            //cartRepo.personalizeBag should throw an error if the item is not in the bag
+            //specifically: if (!cartItem.bag.items.some(item => item.id === removedItemId)) throw new Error(`Item with ID ${removedItemId} is not in the bag`);
+            //we have to mock this behavior
+            //the simplest way is to say to the mock implementation to throw an error if the item is not in the bag
+            mockCartRepo.personalizeBag.mockImplementation((userId, bagId, removedItems) => {
+                //Simulate cartItem retrieval
+                const cartItem = {
+                    bag: {
+                        bagType: 'regular', //Simulate a regular bag type
+                        items: [new BagItem(1, bagId, 'item1', 1, 'kg')] // Simulate items in the bag
+                    }
+                };
+
+
+                //this is the real piece of code in the repo!
+                for (const bagItemIdToRemove of removedItems) {
+                    //check the cartItem actually contains the item to be removed
+                    if (!cartItem.bag.items.some(bagItem => bagItem.id === bagItemIdToRemove)) {
+                        throw new Error(`Item with ID ${bagItemIdToRemove} is not in the bag`);
+                    }
+                }
+
+                return null; // Simulate success for regular bags -> IF THIS LINE IS REACHED, THERE'S A PROBLEM!
+            });
+
+            const userId = 1;
+            const bagId = 1;
+            const removedItems = [9999]; // Example removed items (not in the bag)
+
+            const response = await request(await app)
+                .post(`/carts/${userId}/personalize/${bagId}`)
+                .send({ removedItems: removedItems });
+
+            //IT HAS TO RETURN: NOT FOUND (404)
+            expect(response.status).toBe(HttpStatusCodes.NOT_FOUND);
+            expect(response.body).toHaveProperty('error', `Error: Item with ID ${removedItems[0]} is not in the bag`); // Check the error message
+
+        });
+        
+        
+    });
+
+
+
+
+
 
 });
