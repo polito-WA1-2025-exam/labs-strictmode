@@ -2,11 +2,103 @@ import express from "express";
 import { isValidString, isValidBagSize, isValidBagType, isValidISODate } from "../validation.mjs";
 import {Bag, Establishment, BagItem} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs";
+import dayjs from "dayjs";
+//for timezone and utc when comparing dates with dayjs.now()
+import utc from 'dayjs/plugin/utc'; 
+import timezone from 'dayjs/plugin/timezone'; 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 
 
 export function createBagsRouter({bagRepo, estRepo}) {
     const router = express.Router();
+
+
+    //function to check all the params of a bag
+    //This function either RETURNS an error object or null
+    //this is the front runner of all the logic to prevent calling the db with invalid params and thus wasting resources and time
+    async function checkBagParams(bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available, estRepo, bagId = null){ 
+
+        //if bagId is not null, it means this function is called to update a bag
+        //so check if bagId is valid
+        if (bagId !== null) {
+            const bagId_ = parseInt(bagId);
+            if (isNaN(bagId_)) {
+                return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid bag id!" };
+            }
+        }
+
+        //check is bagType is valid
+        if (!isValidBagType(bagType)) {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid bag type!" };
+        }
+        //check is size is valid
+        if (!isValidBagSize(size)) {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid bag size!" };
+        }
+        //check if pickupTimeStart and pickupTimeEnd are valid ISO dates
+        if (!isValidISODate(pickupTimeStart)) {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid pickup time start!" };
+        }
+        if (!isValidISODate(pickupTimeEnd)) {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid pickup time end!" };
+        }
+
+        //other controls on dates using dayjs
+        const pickupTimeStart_ = dayjs(pickupTimeStart);
+        const pickupTimeEnd_ = dayjs(pickupTimeEnd);
+
+        //check if pickupTimeStart is before pickupTimeEnd
+        if (pickupTimeStart_.isAfter(pickupTimeEnd_)) {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: pickup time start is after pickup time end!" };
+        }
+
+        //check if pickupTimeEnd is in the future (not before the current time)
+        const now = dayjs();
+        if (pickupTimeEnd_.isBefore(now)) {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: pickup time end cannot be in the past!" };
+        }
+
+        //check if available is boolean
+        if (typeof available !== "boolean") {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid available value!" };
+        }
+
+        //check if price is a positive number
+        const priceF = parseFloat(price);
+        if (isNaN(priceF) || priceF <= 0) {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid price!" };
+        }
+
+        //check if estId is a valid integer and exists in the database
+        const estId_ = parseInt(estId);
+        if (isNaN(estId_)) {
+            return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid establishment id format!" };
+        }
+        // Need estRepo to check if the establishment exists
+        if (!estRepo) {
+            console.error("Error: estRepo not passed to checkBagParams!");
+            return { status: HttpStatusCodes.INTERNAL_SERVER_ERROR, error: "Internal server error during validation." };
+        }
+        try {
+            const retrievedEst = await estRepo.getEstablishmentById(estId_);
+            if (!retrievedEst) {
+                // if the establishment retrieved by the user passed estId is null, it means that the establishment doesn't exist
+                return { status: HttpStatusCodes.BAD_REQUEST, error: "Error: invalid establishment id!" };
+            }
+        } catch (error) {
+            console.error("Error checking establishment existence:", error);
+            return { status: HttpStatusCodes.INTERNAL_SERVER_ERROR, error: "Error checking establishment existence." };
+        }
+
+
+        return null; //ALL BAG PARAMS OK
+    }
+
+
+
+
 
     // get bags (optional establishment id filter)
     router.get("/", async (req, res) => {
@@ -55,48 +147,22 @@ export function createBagsRouter({bagRepo, estRepo}) {
     // create a new bag
     router.post("/", async (req, res) => {
         const { bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available } = req.body;
-        //check is bagType is valid
-        if (!isValidBagType(bagType)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid bag type!"});
-        }
-        //check is size is valid
-        if (!isValidBagSize(size)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid bag size!"});
-        }
-        //check if pickupTimeStart and pickupTimeEnd are valid
-        if (!isValidISODate(pickupTimeStart)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid pickup time start!"});
-        }
-        if (!isValidISODate(pickupTimeEnd)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid pickup time end!"});
-        }
-        //check if estId is valid
-        const estId_ = parseInt(estId);
-        if (isNaN(estId_)){
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid establishment id!"})
-        }
-        if (!estRepo.getEstablishment(estId_)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid establishment id!"});
+        
+        const checkParamsResult = await checkBagParams(bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available, estRepo);
+        if (checkParamsResult) {
+            return res.status(checkParamsResult.status).json({ error: checkParamsResult.error });
         }
 
-        //check if available is boolean 
-        if (typeof available !== "boolean") {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid available value!"});
-        }
+        //this gets executed only if all the params are valid, i.e. checkParamsResult is null
 
-        //check if price is a number
-        const priceF = parseFloat(price);
-        if (isNaN(priceF)) {
-            //everything that is not a number is NaN, so we can use this function to check if the price is a number
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid price value!"});
-        }
 
         try {
-            const newBag = new Bag(null, bagType, estId_, size, tags, priceF, pickupTimeStart, pickupTimeEnd, available);
+            const newBag = new Bag(null, bagType, parseInt(estId), size, tags, parseFloat(price), pickupTimeStart, pickupTimeEnd, available);
             const res_ = await bagRepo.createBag(newBag);
-            return res.status(HttpStatusCodes.OK).json(res_);
+            return res.status(HttpStatusCodes.CREATED).json(res_);
         
         } catch (error) {
+            console.error("Error creating bag:", error);
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: it's not possible to create the bag!" });
         }
     });
@@ -129,50 +195,15 @@ export function createBagsRouter({bagRepo, estRepo}) {
     router.put(":/bagId", async (res, req) => {
         const { bagId, bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available } = req.body;
         
-        //check bagId is valid
-        const bagId_ = parseInt(bagId);
-        if (isNaN(bagId)){
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid bag id!"});
+        const checkParamsResult = await checkBagParams(bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available, estRepo, bagId);
+        if (checkParamsResult) {
+            return res.status(checkParamsResult.status).json({ error: checkParamsResult.error });
         }
         
-        //check is bagType is valid
-        if (!isValidBagType(bagType)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid bag type!"});
-        }
-        //check is size is valid
-        if (!isValidBagSize(size)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid bag size!"});
-        }
-        //check if pickupTimeStart and pickupTimeEnd are valid
-        if (!isValidISODate(pickupTimeStart)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid pickup time start!"});
-        }
-        if (!isValidISODate(pickupTimeEnd)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid pickup time end!"});
-        }
-        //check if estId is valid
-        const estId_ = parseInt(estId);
-        if (isNaN(estId_)){
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid establishment id!"})
-        }
-        if (!estRepo.getEstablishment(estId_)) {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid establishment id!"});
-        }
-
-        //check if available is boolean 
-        if (typeof available !== "boolean") {
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid available value!"});
-        }
-
-        //check if price is a number
-        const priceF = parseFloat(price);
-        if (isNaN(priceF)) {
-            //everything that is not a number is NaN, so we can use this function to check if the price is a number
-            return res.status(HttpStatusCodes.BAD_REQUEST).json({error: "Error: invalid price value!"});
-        }
+        //this gets executed only if all the params are valid, i.e. checkParamsResult is null
 
         try {
-            const bagToUpdate = new Bag(bagId_, bagType, estId_, size, tags, priceF, pickupTimeStart, pickupTimeEnd, available);
+            const bagToUpdate = new Bag(parseInt(bagId), bagType, parseInt(estId), size, tags, parseFloat(price), pickupTimeStart, pickupTimeEnd, available);
             const res = await bagRepo.updateBag(bagToUpdate);
 
             if (!res){
@@ -182,7 +213,7 @@ export function createBagsRouter({bagRepo, estRepo}) {
 
             return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({error: "Error: it's not possible to update the bag!"})
         } catch (error){
-            return res.status(HttpStatusCodes.NOT_FOUND).json({error: "Error: it's not possible to update the bag!"})
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({error: "Error: it's not possible to update the bag!"})
         }
     });
 

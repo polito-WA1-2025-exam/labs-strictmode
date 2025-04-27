@@ -2,8 +2,7 @@ const request = require('supertest');
 import express from 'express';
 import {User, Establishment} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
-import {createUsersRouter} from "./users.js";
-import {createEstablishmentsRouter} from "./establishments.js";
+import {createUsersRouter, createEstablishmentsRouter, createBagsRouter, createReservationsRouter, createCartsRouter} from "./index.mjs";
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { hashPassword, comparePassword } from '../crypto.mjs';
 import dayjs from 'dayjs';
@@ -26,14 +25,32 @@ const mockEstablishmentRepo = {
     getBags: vi.fn(),
     listAllEstablishments: vi.fn()
 };
+//Mock the bagRepo
+const mockBagRepo = {
+    createBag: vi.fn(),
+    getBagById: vi.fn(),
+    updateBag: vi.fn(),
+    deleteBag: vi.fn(),
+    getBagListByEstId: vi.fn(),
+    getItems: vi.fn(),
+    setAvailable: vi.fn(),
+    listAvailable: vi.fn(),
+    checkBagAvailable: vi.fn(),
+    addItem: vi.fn(),
+    removeItem: vi.fn()
+};
+
 
 function setupApp() {
     const app = express();
     app.use(express.json());
     const userRouter = createUsersRouter({ userRepo: mockUserRepo });
     const establishmentRouter = createEstablishmentsRouter({ estRepo: mockEstablishmentRepo });
+    const bagRouter = createBagsRouter({ bagRepo: mockBagRepo, estRepo: mockEstablishmentRepo });
     app.use('/users', userRouter);
     app.use('/establishments', establishmentRouter);
+    app.use('/bags', bagRouter);
+
     return app;
 }
 
@@ -707,5 +724,345 @@ describe('Establishments Router', () => {
 
 
   
+
+});
+
+
+//Bags Router
+describe('Bags Router', () => {
+
+    test('POST /bags - create a new bag', async () => {
+        //const { bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, available } = req.body;
+        const newBag = {
+            bagType: 'regular',
+            estId: 1,
+            size: 'small',
+            tags: 'tag1',
+            price: 10.0,
+            pickupTimeStart: dayjs().toISOString(),
+            pickupTimeEnd: dayjs().add(1, 'day').toISOString(),
+            available: true
+        };
+        
+        //mock the establishmentRepo to return a valid establishment for the given estId
+        const establishment = new Establishment(newBag.estId, 'Test Establishment', null, 'Test Type', '123 Test St');
+        mockEstablishmentRepo.getEstablishmentById.mockResolvedValue(establishment);
+
+        //the id will be 1 and it wil be added by the db, so we mock it here
+        const createdBag = { id: 1, ...newBag };
+        mockBagRepo.createBag.mockResolvedValue(createdBag);
+
+        const response = await request(app)
+            .post('/bags')
+            .send(newBag);
+
+
+        //check HTTP status code
+        expect(response.status).toBe(HttpStatusCodes.CREATED);
+
+        //check response body
+        expect(response.body).toEqual(createdBag);
+    });
+    
+
+    describe('POST /bags - BAD REQUEST Errors', () => {
+
+        test("invalid bagType", async () => {
+            let newBag = {
+                bagType: 'big', // invalid bagType: it mus be 'regular' or 'express'
+                estId: 1,
+                size: 'small',
+                tags: 'tag1',
+                price: 10.0,
+                pickupTimeStart: dayjs().toISOString(),
+                pickupTimeEnd: dayjs().add(1, 'day').toISOString(),
+                available: true
+            };
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid bag type!");
+
+
+        });
+
+        test("invalid establishment id", async () => {
+            let newBag = {
+                bagType: 'regular',
+                estId: 999, // invalid establishment id (assuming it does not exist)
+                size: 'small',
+                tags: 'tag1',
+                price: 10.0,
+                pickupTimeStart: dayjs().toISOString(),
+                pickupTimeEnd: dayjs().add(1, 'day').toISOString(),
+                available: true
+            };
+
+            //mock the establishmentRepo to return null for the given estId
+            mockEstablishmentRepo.getEstablishmentById.mockResolvedValue(null);
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid establishment id!");
+
+        });
+
+        test("invalid size", async () => {
+            let newBag = {
+                bagType: 'regular',
+                estId: 1,
+                size: '', // invalid size
+                tags: 'tag1',
+                price: 10.0,
+                pickupTimeStart: dayjs().toISOString(),
+                pickupTimeEnd: dayjs().add(1, 'day').toISOString(),
+                available: true
+            };
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid bag size!");
+
+        });
+
+
+        test("invalid pickupTimeStart", async () => {
+            let newBag = {
+                bagType: 'regular',
+                estId: 1,
+                size: 'small',
+                tags: 'tag1',
+                price: 10.0,
+                pickupTimeStart: 'invalid-date', // invalid date
+                pickupTimeEnd: dayjs().add(1, 'day').toISOString(),
+                available: true
+            };
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid pickup time start!");
+
+        });
+
+        test("invalid pickupTimeEnd", async () => {
+            let newBag = {
+                bagType: 'regular',
+                estId: 1,
+                size: 'small',
+                tags: 'tag1',
+                price: 10.0,
+                pickupTimeStart: dayjs().toISOString(),
+                pickupTimeEnd: 'invalid-date', // invalid date
+                available: true
+            };
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid pickup time end!");
+
+        });
+
+
+        test("pickupTimeEnd before pickupTimeStart", async () => {
+            const newBag = {
+                bagType: 'regular',
+                estId: 1,
+                size: 'small',
+                tags: 'tag1',
+                price: 10.0,
+                pickupTimeStart: dayjs().add(2, 'day').toISOString(), // Start time is after end time
+                pickupTimeEnd: dayjs().add(1, 'day').toISOString(), // End time is before start time
+                available: true
+            };
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+            
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: pickup time start is after pickup time end!");
+           
+        });
+
+
+        test("pickupTimeEnd in the past wrt now", async () => {
+            let newBag = {
+                bagType: 'regular',
+                estId: 1,
+                size: 'small',
+                tags: 'tag1',
+                price: 10.0,
+                pickupTimeStart: dayjs().subtract(2, 'day').toISOString(), // Start time is in the future
+                pickupTimeEnd: dayjs().subtract(1, 'day').toISOString(), // End time is in the past
+                available: true
+            };
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: pickup time end cannot be in the past!");
+
+
+            newBag.pickupTimeEnd = dayjs().subtract(1, 'hour').toISOString(); // End time is in the past aswell: 1 hours ago
+
+            const response2 = await request(app)
+                .post('/bags')
+                .send(newBag);
+            
+            expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response2.body).toHaveProperty('error');
+            expect(response2.body.error).toBe("Error: pickup time end cannot be in the past!");
+
+
+            newBag.pickupTimeEnd = dayjs().subtract(1, 'second').toISOString(); // End time is in the past aswell: 1 second ago
+            const response3 = await request(app)
+                .post('/bags')
+                .send(newBag);
+            
+            expect(response3.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response3.body).toHaveProperty('error');
+            expect(response3.body.error).toBe("Error: pickup time end cannot be in the past!");
+
+
+        });
+
+
+        test("invalid price", async () => {
+            let newBag = {
+                bagType: 'regular',
+                estId: 1,
+                size: 'small',
+                tags: 'tag1',
+                price: -10.0, // invalid price (negative value)
+                pickupTimeStart: dayjs().toISOString(),
+                pickupTimeEnd: dayjs().add(1, 'day').toISOString(),
+                available: true
+            };
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid price!");
+
+
+            newBag.price = 0; // invalid price (zero value)
+
+            const response2 = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response2.body.error).toBe("Error: invalid price!");
+
+
+            newBag.price = 'invalid-price'; // invalid price (not a number)
+
+            const response3 = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response2.body.error).toBe("Error: invalid price!");
+
+        });
+
+
+        test("invalid available", async () => {
+
+            let newBag = {
+                bagType: 'regular',
+                estId: 1,
+                size: 'small',
+                tags: 'tag1',
+                price: 10.0,
+                pickupTimeStart: dayjs().toISOString(),
+                pickupTimeEnd: dayjs().add(1, 'day').toISOString(),
+                available: 'not-a-boolean' // invalid available (not a boolean)
+            };
+
+            const response = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response.body.error).toBe("Error: invalid available value!");
+
+
+            newBag.available = 1; // invalid available (not a boolean)
+
+            const response2 = await request(app)
+                .post('/bags')
+                .send(newBag);
+
+            expect(response2.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error');
+            expect(response2.body.error).toBe("Error: invalid available value!");
+
+
+        });
+
+
+
+    });
+
+
+    test("POST /bags - INTERNAL SERVER ERROR", async () => {
+        //bagRepo.createBag(newBag) PROMISE REJECTED
+        mockBagRepo.createBag.mockRejectedValue(new Error("Database error"));
+
+        let requestBody = {
+            bagType: "regular",
+            estId: 1,
+            size: "medium",
+            tags: "prova",
+            price: 10.0,
+            pickupTimeStart: dayjs().toISOString(),
+            pickupTimeEnd: dayjs().add(1, 'day').toISOString(),
+            available: true
+        };
+
+        //mock the establishmentRepo to return a valid establishment for the given estId
+        const establishment = new Establishment(requestBody.estId, 'Test Establishment', null, 'Test Type', '123 Test St');
+        mockEstablishmentRepo.getEstablishmentById.mockResolvedValue(establishment);
+
+        const response = await request(app)
+            .post('/bags')
+            .send(requestBody);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe("Error: it's not possible to create the bag!");
+    });
+    
 
 });
