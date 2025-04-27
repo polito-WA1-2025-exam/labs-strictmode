@@ -1,4 +1,4 @@
-# Group "GROUP NAME"
+# Group "strictmode"
 
 ## Members
 - s340076 Miglietta Lorenzo
@@ -7,8 +7,16 @@
 - s339423 Revalor Riccardo
 - s343452 Gontero Diana
 
-# Exercise "NAME OF EXERCISE"
+# Exercise "SurplusFood"
 
-# Lab Journal
+## To start the server
+```sh
+npm install
+npm run migrate # inits the db for the first time
+npm run start
+```
 
-(you may update this file to keep track of the progress of your group work, throughout the weeks)
+## To run the tests
+```sh
+npm run tests
+```
