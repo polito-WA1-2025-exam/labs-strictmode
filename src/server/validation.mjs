@@ -16,6 +16,10 @@ const MAX_STRING_LENGTH = 100;
 //Verify email address is valid
 function isValidEmail(email){
 
+    if (!email){
+        return false;
+    }
+
     //First: check if the email is empty or too long
     if (email.length === 0 || email.length > MAX_EMAIL_LENGTH) {
         return false;
@@ -44,22 +48,34 @@ function isValidEmail(email){
 }
 
 function isValidAssignedName(assignedName) {
+    if (!assignedName) {
+        return false;
+    }
     //return false if assignedName is empty or too long
     return assignedName.length > 0 && assignedName.length <= MAX_ASSIGNED_NAME_LENGTH;
 
 }
 
 function isValidFamilyName(familyName) {
+    if (!familyName){
+        return false;
+    }
     //return false if familyName is empty or too long
     return familyName.length > 0 && familyName.length <= MAX_FAMILY_NAME_LENGTH;
 }
 
 function isValidString(string) {
+    if (!string){
+        return false;
+    }
     //return false if string is empty or too long
     return string.length > 0 && string.length <= MAX_STRING_LENGTH;
 }
 
 function isValidBagSize(size){
+    if (!size){
+        return false;
+    }
     //valid bag sizes are: "small", "medium", "large"
     if (size.length === 0) {
         return false;
@@ -72,6 +88,9 @@ function isValidBagSize(size){
 }
 
 function isValidBagType(bagType) {
+    if (!bagType){
+        return false;
+    }
     //valid bag types are: "regular", "surprise"
     if (bagType.length === 0) {
         return false;
@@ -86,6 +105,9 @@ function isValidBagType(bagType) {
 
 //function to check wether the date is expressed in ISO 8601 format
 function isValidISODate(date) {
+    if (!date){
+        return false;
+    }
 
     if (date.length === 0) {
         return false;
