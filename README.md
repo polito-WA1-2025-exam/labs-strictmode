@@ -18,5 +18,5 @@ npm run start
 
 ## To run the tests
 ```sh
-npm run tests
+npm run test
 ```
