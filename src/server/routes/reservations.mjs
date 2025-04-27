@@ -142,12 +142,16 @@ export function createReservationsRouter({ cartRepo, resRepo, bagRepo }) {
         try {
             const reservationId = parseInt(req.params.id);
             if (isNaN(reservationId)){
-                return res.status(400).json({ error: "Error: reservationId is not a number!" });
+                return res.status(HttpStatusCodes.BAD_REQUEST).json({ error: "Error: reservationId is not a number!" });
             }
             const res_ = await resRepo.cancelReservation(reservationId);
-            return res.json(res_);
+            if (!res_){
+                return res.status(HttpStatusCodes.OK).json({ success: "Reservation deleted successfully!" });
+            }
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: cannot delete reservation!" });
         } catch (error) {
-            return res.status(404).json({ error: "Error: Reservation not found!" });
+            
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: cannot delete reservation!" });
         }
     });
 
@@ -158,15 +162,15 @@ export function createReservationsRouter({ cartRepo, resRepo, bagRepo }) {
         try {
             const userId = parseInt(req.params.userId);
             if (isNaN(userId)){
-                return res.status(400).json({ error: "Error: userId is not a number!" });
+                return res.status(HttpStatusCodes.BAD_REQUEST).json({ error: "Error: userId is not a number!" });
             }
             const res_ = await resRepo.listReservationsByUser(userId);
             if (!res_){
-                return res.status(404).json({ error: "Reservations not found!" });
+                return res.status(HttpStatusCodes.BAD_REQUEST).json({ error: "Reservations not found!" });
             }
             return res.json(res_);
         } catch (error) {
-            return res.status(500).json({ error: "Error: Server error!" });
+            return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Error: cannot retrieve reservations!" });
         }
     });
 

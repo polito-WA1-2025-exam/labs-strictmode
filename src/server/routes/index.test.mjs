@@ -8,6 +8,8 @@ import { hashPassword, comparePassword } from '../crypto.mjs';
 import dayjs from 'dayjs';
 
 function toPlainObject(obj) {
+    //function to convert an object to a plain object (removing any prototype methods)
+    //since the responses are all plain objects, in order to compare our sample objects with the responses, we need to convert them to plain objects
     if (obj === null || typeof obj !== 'object') {
       return obj;
     }
@@ -1959,11 +1961,15 @@ describe('Reservations Router', () => {
         .post(`/reservations/${userId}`)
         .send();
 
-        console.log(response.body); // Log the response body for debugging
         expect(response.status).toBe(HttpStatusCodes.CREATED); 
-        //expect(response.body).toEqual([toPlainObject(reservation1), toPlainObject(reservation2)]);
+        expect(response.body).toEqual(toPlainObject(response.body)); 
+        expect(response.body).toHaveLength(2); //Check that there are 2 reservations in the response
+        expect(response.body[0].id).toBe(reservation1.id); //Check the first reservation ID
+        expect(response.body[1].id).toBe(reservation2.id); //Check the second reservation ID
+
 
         expect(mockReservationRepo.createReservation).toHaveBeenCalledTimes(2);
+
     
     });
 
@@ -2127,6 +2133,120 @@ describe('Reservations Router', () => {
             expect(response.status).toBe(HttpStatusCodes.FORBIDDEN);
             expect(response.body).toHaveProperty('error', `Cart Item (having ID 1) already reserved by other user!`); // Adjust error message if different
         });
+
+        test("INTERNAL SERVER ERROR", async () => {
+
+             //we have to mock a cart having some items in it
+            const userId = 1;
+
+            //BAGITEM: id, bagId, name, quantity, measurementUnit
+            const bagItem1 = new BagItem(1, 1, 'tomato', 1, 'kg');
+            const bagItem2 = new BagItem(2, 1, 'water', 2, 'kg');
+            //BAG: id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+            //SUPPONSE DIFFERENT EST IDs IN ORDER TO RESPECT THE CONSTRAINT
+            const cartItem1 = new CartItem(1, new Bag(1, 'regular', 1, 'small', 'tag1', 10.0, [bagItem1], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true), userId, []);
+            const cartItem2 = new CartItem(2, new Bag(2, 'surprise', 2, 'large', 'tag2', 20.0, [bagItem2], dayjs().toISOString(), dayjs().add(2, 'day').toISOString(), true), userId, []);
+
+
+            const cart = new Cart(userId); // Create a cart with the items
+            cart.addItem(cartItem1); 
+            cart.addItem(cartItem2); 
+
+            // Mock the cartRepo.getCartByUserId to return the cart
+            mockCartRepo.getCartByUserId.mockResolvedValue(cart); // Simulate successful retrieval of the cart
+
+            //all the bags are available at the time of reservation
+            //we have to mock bagRepo.checkBagAvailable to return true for all bags
+            mockBagRepo.checkBagAvailable.mockResolvedValue(true); // Simulate successful check for bag availability
+
+            //suppose the use has not other reservations at the same time for the same estId
+            //so we mock  await resRepo.checkEstablishmentContraint(userId, reservationTime, estId); to always return false
+            mockReservationRepo.checkEstablishmentContraint.mockResolvedValue(false); // Simulate successful check for establishment constraint
+
+
+            // Mock the reservationRepo.createReservation to throw an error
+            mockReservationRepo.createReservation.mockRejectedValue(new Error("Database error")); // Simulate error
+
+            const response = await request(await app)
+                .post(`/reservations/${userId}`)
+                .send(); 
+
+            console.log(response.body); // Log the response body for debugging
+            expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+            expect(response.body).toHaveProperty('error', "Error: it's not possible to create the reservation!"); // Adjust error message if different
+        });
     });
 
+
+    test("DELETE /reservations/:userId/:reservationId - delete a reservation", async () => {
+        const userId = 1;
+        const reservationId = 1;
+
+        // Mock the reservationRepo.deleteReservation to return null (success)
+        mockReservationRepo.cancelReservation.mockResolvedValue(null); // Simulate successful deletion
+
+        const response = await request(await app)
+            .delete(`/reservations/${reservationId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toHaveProperty('success', 'Reservation deleted successfully!'); // Adjust success message if different
+    });
+
+    test("DELETE /reservations/:userId/:reservationId - INTERNAL SERVER ERROR", async () => {
+        const reservationId = 1;
+
+        // Mock the reservationRepo.deleteReservation to throw an error
+        mockReservationRepo.cancelReservation.mockRejectedValue(new Error("Database error")); // Simulate error
+
+        const response = await request(await app)
+            .delete(`/reservations/${reservationId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error', "Error: cannot delete reservation!"); // Adjust error message if different
+    });
+
+        
+
+    test("GET /reservations/:userId - get all reservations for a user", async () => {
+        const userId = 1;
+
+        // Mock the reservationRepo.getReservationsByUserId to return an array of reservations
+        const reservation1 = new Reservation(1, userId, new CartItem(1, new Bag(1, 'regular', 1, 'small', 'tag1', 10.0, [], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true), userId, []), dayjs().toISOString());
+        const reservation2 = new Reservation(2, userId, new CartItem(2, new Bag(2, 'surprise', 2, 'large', 'tag2', 20.0, [], dayjs().toISOString(), dayjs().add(2, 'day').toISOString(), true), userId, []), dayjs().toISOString());
+
+        mockReservationRepo.listReservationsByUser.mockResolvedValue([reservation1, reservation2]); // Simulate successful retrieval of reservations
+
+        const response = await request(await app)
+            .get(`/reservations/user/${userId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.OK);
+        expect(response.body).toEqual(response.body.map(toPlainObject));
+        expect(response.body).toHaveLength(2); 
+        expect(response.body[0]).toHaveProperty('id', reservation1.id); // Check the first reservation
+        expect(response.body[1]).toHaveProperty('id', reservation2.id); // Check the second reservation
+        
+    });
+
+    test("GET /reservations/:userId - BAD REQUEST - invalid userId", async () => {
+        const invalidUserId = 'invalid-id'; // it will turn out to be NaN
+        const response = await request(await app)
+            .get(`/reservations/user/${invalidUserId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+        expect(response.body).toHaveProperty('error', 'Error: userId is not a number!'); // Adjust error message if different
+    });
+
+    test("GET /reservations/:userId - INTERNAL SERVER ERROR", async () => {
+        const userId = 1;
+
+        // Mock the reservationRepo.listReservationsByUser to throw an error
+        mockReservationRepo.listReservationsByUser.mockRejectedValue(new Error("Database error")); // Simulate error
+
+        const response = await request(await app)
+            .get(`/reservations/user/${userId}`);
+
+        expect(response.status).toBe(HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('error', "Error: cannot retrieve reservations!"); // Adjust error message if different
+    });
+       
 });
