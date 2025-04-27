@@ -1,12 +1,27 @@
 const request = require('supertest');
 import express from 'express';
-import {User, Establishment, Bag, BagItem, CartItem} from "../../models/index.mjs";
+import {User, Establishment, Bag, BagItem, CartItem, Reservation, Cart} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
 import {createUsersRouter, createEstablishmentsRouter, createBagsRouter, createReservationsRouter, createCartsRouter} from "./index.mjs";
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { hashPassword, comparePassword } from '../crypto.mjs';
 import dayjs from 'dayjs';
 
+function toPlainObject(obj) {
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(toPlainObject);
+    }
+    const plainObj = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        plainObj[key] = toPlainObject(obj[key]);
+      }
+    }
+    return plainObj;
+  }
 
 //All the Mocks for the Repos are inserted here
 //Mock the userRepo
@@ -47,6 +62,15 @@ const mockCartRepo = {
     removeBag: vi.fn(),
     personalizeBag: vi.fn()
 };
+//Mock the reservationRepo
+const mockReservationRepo = {
+    createReservation: vi.fn(),
+    checkEstablishmentContraint: vi.fn(),
+    getReservationByCartItemId: vi.fn(),
+    listReservationsByUser: vi.fn(),
+    listReservationsByEstablishment: vi.fn(),
+    cancelReservation: vi.fn()
+};
 
 
 function setupApp() {
@@ -56,10 +80,12 @@ function setupApp() {
     const establishmentRouter = createEstablishmentsRouter({ estRepo: mockEstablishmentRepo });
     const bagRouter = createBagsRouter({ bagRepo: mockBagRepo, estRepo: mockEstablishmentRepo });
     const cartRouter = createCartsRouter({ cartRepo: mockCartRepo, bagRepo: mockBagRepo });
+    const reservationRouter = createReservationsRouter({ cartRepo: mockCartRepo, resRepo: mockReservationRepo, bagRepo: mockBagRepo});
     app.use('/users', userRouter);
     app.use('/establishments', establishmentRouter);
     app.use('/bags', bagRouter);
     app.use('/carts', cartRouter);
+    app.use('/reservations', reservationRouter);
 
     return app;
 }
@@ -1878,5 +1904,229 @@ describe('Carts Router', () => {
 
 
 
+
+});
+
+
+//Reservations Router
+describe('Reservations Router', () => {
+
+    test("POST /reservations/:userId - create a reservation", async () => {
+
+        //we have to mock a cart having some items in it
+        const userId = 1;
+
+        //BAGITEM: id, bagId, name, quantity, measurementUnit
+        const bagItem1 = new BagItem(1, 1, 'tomato', 1, 'kg');
+        const bagItem2 = new BagItem(2, 1, 'water', 2, 'kg');
+        //BAG: id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+        //SUPPONSE DIFFERENT EST IDs IN ORDER TO RESPECT THE CONSTRAINT
+        const cartItem1 = new CartItem(1, new Bag(1, 'regular', 1, 'small', 'tag1', 10.0, [bagItem1], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true), userId, []);
+        const cartItem2 = new CartItem(2, new Bag(2, 'surprise', 2, 'large', 'tag2', 20.0, [bagItem2], dayjs().toISOString(), dayjs().add(2, 'day').toISOString(), true), userId, []);
+
+
+        const cart = new Cart(userId); // Create a cart with the items
+        cart.addItem(cartItem1); 
+        cart.addItem(cartItem2); 
+
+        // Mock the cartRepo.getCartByUserId to return the cart
+        mockCartRepo.getCartByUserId.mockResolvedValue(cart); // Simulate successful retrieval of the cart
+
+        //all the bags are available at the time of reservation
+        //we have to mock bagRepo.checkBagAvailable to return true for all bags
+        mockBagRepo.checkBagAvailable.mockResolvedValue(true); // Simulate successful check for bag availability
+
+        //suppose the use has not other reservations at the same time for the same estId
+        //so we mock  await resRepo.checkEstablishmentContraint(userId, reservationTime, estId); to always return false
+        mockReservationRepo.checkEstablishmentContraint.mockResolvedValue(false); // Simulate successful check for establishment constraint
+    
+        //lastly, we need to mock resRepo.createReservation(newReservation)
+        //create a reservation object to return
+        //1 RESERVATION FOR EACH CART ITEM
+
+        const reservationId = 1;
+        //id, userId, cartItem, createdAt, canceledAt = null
+        const reservation1 = new Reservation(reservationId, userId, cartItem1, dayjs().toISOString()); //FOR CART ITEM 1
+
+        const reservation2 = new Reservation(reservationId + 1, userId, cartItem2, dayjs().toISOString()); //FOR CART ITEM 2
+
+        // Mock createReservation to return different values on subsequent calls
+        mockReservationRepo.createReservation
+        .mockResolvedValueOnce(reservation1) // First call returns reservation1
+        .mockResolvedValueOnce(reservation2); // Second call returns reservation2
+
+        const response = await request(app) 
+        .post(`/reservations/${userId}`)
+        .send();
+
+        console.log(response.body); // Log the response body for debugging
+        expect(response.status).toBe(HttpStatusCodes.CREATED); 
+        //expect(response.body).toEqual([toPlainObject(reservation1), toPlainObject(reservation2)]);
+
+        expect(mockReservationRepo.createReservation).toHaveBeenCalledTimes(2);
+    
+    });
+
+
+    describe("POST /reservations/:userId - Errors", () => {
+        test("BAD REQUEST - invalid userId", async () => {
+            const invalidUserId = 'invalid-id'; // it will turn out to be NaN
+            const response = await request(await app)
+                .post(`/reservations/${invalidUserId}`)
+                .send(); // No body needed for this test
+
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: userId is not a number!'); // Adjust error message if different
+        });
+
+
+        test("BAD REQUEST - user has no cart", async () => {  
+            const userId = 1;
+
+            // Mock the cartRepo.getCartByUserId to return null (no cart found)
+            mockCartRepo.getCartByUserId.mockResolvedValue(null); // Simulate no cart found
+
+            const response = await request(await app)
+                .post(`/reservations/${userId}`)
+                .send(); 
+
+            
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: User has no cart!'); // Adjust error message if different
+        });
+
+        test("BAD REQUEST - user's cart is empty", async () => {
+            const userId = 1;
+
+            // Mock the cartRepo.getCartByUserId to return an empty cart
+            const emptyCart = new Cart(userId); // Create an empty cart
+            mockCartRepo.getCartByUserId.mockResolvedValue(emptyCart); // Simulate successful retrieval of the empty cart
+
+            const response = await request(await app)
+                .post(`/reservations/${userId}`)
+                .send(); 
+
+            
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', 'Error: User\'s cart is empty!'); // Adjust error message if different
+        });
+
+
+        test("FORBIDDEN - bag already expired", async () => {
+            const userId = 1;
+            const bagItem1 = new BagItem(1, 1, 'tomato', 1, 'kg');
+            const bagItem2 = new BagItem(2, 1, 'water', 2, 'kg');
+            //BAG: id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+            //SUPPONSE DIFFERENT EST IDs IN ORDER TO RESPECT THE CONSTRAINT
+            const cartItem1 = new CartItem(1, new Bag(1, 'regular', 1, 'small', 'tag1', 10.0, [bagItem1], dayjs().subtract(2, 'day').toISOString(), dayjs().subtract(1, 'day').toISOString(), true), userId, []);
+            const cartItem2 = new CartItem(2, new Bag(2, 'surprise', 2, 'large', 'tag2', 20.0, [bagItem2], dayjs().subtract(3, 'day').toISOString(), dayjs().subtract(2, 'day').toISOString(), true), userId, []);
+
+
+            const cart = new Cart(userId); // Create a cart with the items
+            cart.addItem(cartItem1); 
+            cart.addItem(cartItem2); 
+
+            // Mock the cartRepo.getCartByUserId to return the cart
+            mockCartRepo.getCartByUserId.mockResolvedValue(cart); // Simulate successful retrieval of the cart
+
+            const response = await request(await app)
+                .post(`/reservations/${userId}`)
+                .send(); 
+
+            
+            expect(response.status).toBe(HttpStatusCodes.FORBIDDEN);
+            expect(response.body).toHaveProperty('error', `Error: Cart Item (having ID ${cartItem1.bag.id}) already expired!`); // Adjust error message if different
+        });
+
+
+        test("BAD REQUEST - cart item is empty", async () => {
+            const userId = 1;
+            const bagItem1 = new BagItem(1, 1, 'tomato', 1, 'kg');
+            const bagItem2 = new BagItem(2, 1, 'water', 2, 'kg');
+            //BAG: id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+            //SUPPONSE DIFFERENT EST IDs IN ORDER TO RESPECT THE CONSTRAINT
+            const cartItem1 = new CartItem(1, new Bag(1, 'regular', 1, 'small', 'tag1', 10.0, [], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true), userId, []);
+            const cartItem2 = new CartItem(2, new Bag(2, 'surprise', 2, 'large', 'tag2', 20.0, [], dayjs().toISOString(), dayjs().add(2, 'day').toISOString(), true), userId, []);
+
+
+            const cart = new Cart(userId); // Create a cart with the items
+            cart.addItem(cartItem1); 
+            cart.addItem(cartItem2); 
+
+            // Mock the cartRepo.getCartByUserId to return the cart
+            mockCartRepo.getCartByUserId.mockResolvedValue(cart); // Simulate successful retrieval of the cart
+
+            const response = await request(await app)
+                .post(`/reservations/${userId}`)
+                .send(); 
+
+            
+            expect(response.status).toBe(HttpStatusCodes.BAD_REQUEST);
+            expect(response.body).toHaveProperty('error', `Error: Cart Item (having ID ${cartItem1.bag.id}) is empty!`); // Adjust error message if different
+        });
+
+
+        test("FORBIDDEN - bag is not available anymore at the time of the reservation", async () => {
+            const userId = 1;
+            const bagItem1 = new BagItem(1, 1, 'tomato', 1, 'kg');
+            const bagItem2 = new BagItem(2, 1, 'water', 2, 'kg');
+            //BAG: id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+            //SUPPONSE DIFFERENT EST IDs IN ORDER TO RESPECT THE CONSTRAINT
+            const cartItem1 = new CartItem(1, new Bag(1, 'regular', 1, 'small', 'tag1', 10.0, [bagItem1], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), false), userId, []);
+            const cartItem2 = new CartItem(2, new Bag(2, 'surprise', 2, 'large', 'tag2', 20.0, [bagItem2], dayjs().toISOString(), dayjs().add(2, 'day').toISOString(), true), userId, []);
+
+
+            const cart = new Cart(userId); // Create a cart with the items
+            cart.addItem(cartItem1); 
+            cart.addItem(cartItem2); 
+
+            // Mock the cartRepo.getCartByUserId to return the cart
+            mockCartRepo.getCartByUserId.mockResolvedValue(cart); // Simulate successful retrieval of the cart
+
+            //we have to mock resRepo.createReservation to throw an error if the bag is not available
+            //throw new Error("Bag is not available anymore!");
+
+            mockReservationRepo.createReservation.mockRejectedValue(new Error("Bag is not available anymore!")); // Simulate error
+
+
+            const response = await request(await app)
+                .post(`/reservations/${userId}`)
+                .send(); 
+
+            
+            expect(response.status).toBe(HttpStatusCodes.FORBIDDEN);
+            expect(response.body).toHaveProperty('error', `Error: Bag is not available anymore!`); // Adjust error message if different
+        });
+
+        test("FORBIDDEN - user has already a reservation for the same establishment at the same day", async () => {
+            const userId = 1;
+            const bagItem1 = new BagItem(1, 1, 'tomato', 1, 'kg');
+            const bagItem2 = new BagItem(2, 1, 'water', 2, 'kg');
+            //BAG: id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available
+            //SUPPONSE DIFFERENT EST IDs IN ORDER TO RESPECT THE CONSTRAINT
+            const cartItem1 = new CartItem(1, new Bag(1, 'regular', 1, 'small', 'tag1', 10.0, [bagItem1], dayjs().toISOString(), dayjs().add(1, 'day').toISOString(), true), userId, []);
+            const cartItem2 = new CartItem(2, new Bag(2, 'surprise', 2, 'large', 'tag2', 20.0, [bagItem2], dayjs().toISOString(), dayjs().add(2, 'day').toISOString(), true), userId, []);
+
+
+            const cart = new Cart(userId); // Create a cart with the items
+            cart.addItem(cartItem1); 
+            cart.addItem(cartItem2); 
+
+            // Mock the cartRepo.getCartByUserId to return the cart
+            mockCartRepo.getCartByUserId.mockResolvedValue(cart); // Simulate successful retrieval of the cart
+
+            //we have to mock resRepo.checkEstablishmentContraint to return true (user has already a reservation for the same establishment at the same time)
+            mockReservationRepo.checkEstablishmentContraint.mockResolvedValue(true); // Simulate error
+
+
+            const response = await request(await app)
+                .post(`/reservations/${userId}`)
+                .send(); 
+
+            
+            expect(response.status).toBe(HttpStatusCodes.FORBIDDEN);
+            expect(response.body).toHaveProperty('error', `Cart Item (having ID 1) already reserved by other user!`); // Adjust error message if different
+        });
+    });
 
 });

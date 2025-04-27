@@ -22,8 +22,14 @@ export class ReservationRepo {
 
         await this.DB.run('BEGIN TRANSACTION'); //Start explicit transaction
 
+        //check the bag is available at the time of reservation
+        const isBagAvailable = await bagRepo.checkBagAvailable(reservation.cartItem.bag.id);
+        if (!isBagAvailable) {
+            throw new Error("Bag is not available anymore!");
+        }
+
         try {
-            //canceledAt is set to null by default (see create_db.mjs), so it is not included in the query when creating a new Reservation.
+           //canceledAt is set to null by default (see create_db.mjs), so it is not included in the query when creating a new Reservation.
             const query = 'INSERT INTO RESERVATION (cartItemId, userId, createdAt) VALUES (?, ?, ?)';
             const promiseRes = await new Promise((resolve, reject) => {
                 this.DB.run(query, [reservation.cartItem.id, reservation.userId, reservation.createdAt], function (err) {
