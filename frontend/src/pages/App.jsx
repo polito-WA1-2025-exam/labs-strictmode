@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, useNavigate } from 'react-router-dom';
-import {Home, Login, Cart, Establishments} from "./index.js";
+import {Home, LoginForm, Cart, Establishments} from "./index.js";
 
 
 
@@ -27,7 +27,7 @@ function Main() {
     return (
         <Routes>
             <Route path = "/" element = {<Home/>}></Route>
-            <Route path = "/login" element = {<Login/>}></Route>
+            <Route path = "/login" element = {<LoginForm/>}></Route>
             <Route path = "/cart" element = {<Cart/>}></Route>
             <Route path = "/establishments" element = {<Establishments/>}></Route>
             <Route path = "*" element = {<p>404 Not Found</p>}></Route>
