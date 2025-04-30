@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, useNavigate } from 'react-router-dom';
-import {Home, LoginForm, Cart, Establishments} from "./pages/index.js";
+import {Home, LoginForm, Cart, Establishments} from "./components/index.js";
 import API from "./API";
 
 

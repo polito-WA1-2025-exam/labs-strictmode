@@ -10,6 +10,7 @@ import {
   Card, 
   Image 
 } from 'react-bootstrap';
+import HeroSection from './HeroSection.jsx';
 
 
 /**
@@ -40,64 +41,7 @@ export default function Establishments(props) {
 
 
         {/* Hero Section */}
-        <div className="bg-success text-white py-5">
-          <Container>
-            <Row className="align-items-center">
-              <Col md={8} className="mb-4 mb-md-0">
-                <h1 className="display-4 fw-italic" style={{fontFamily: "Ubuntu", fontWeight: 300}}>🍽️ Top Notch Restaurants and Grocery Stores</h1>
-                <h2 className="display-4 fst-italic" style={{fontFamily: "Lobster"}}>at a tap of your fingers</h2>
-              </Col>
-              <Col md={4} className="position-relative" style={{ height: '400px' }}>
-              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                <img 
-                  src="/healthy-food.jpg" 
-                  alt="Fresh food 0" 
-                  className="img-fluid rounded shadow-lg"
-                  style={{
-                    position: 'absolute',
-                    top: '0',
-                    left: '0',
-                    width: '70%',
-                    zIndex: 2,
-                    borderRadius: '1rem'
-                  }}
-                />
-                <img 
-                  src="/egg.jpg" 
-                  alt="Fresh food 1" 
-                  className="img-fluid rounded shadow"
-                  style={{
-                    position: 'absolute',
-                    bottom: '0',
-                    right: '0',
-                    left: '80%',
-                    width: '60%',
-                    zIndex: 1,
-                    top: '25%',
-                    borderRadius: '1rem'
-                  }}
-                />
-                <img 
-                  src="/muffin.jpg" 
-                  alt="Fresh food 2" 
-                  className="img-fluid rounded shadow"
-                  style={{
-                    position: 'absolute',
-                    bottom: '0',
-                    right: '0',
-                    left: '10%',
-                    width: '60%',
-                    zIndex: 1,
-                    top: '45%',
-                    borderRadius: '1rem'
-                  }}
-                />
-              </div>
-            </Col>
-
-            </Row>
-          </Container>
-        </div>
+        <HeroSection herotitle = "🍽️ Top Notch Restaurants and Grocery Stores" herosubtitle = "at a tap of your fingers" imgDisposition={3} imgSrc={["/healthy-food.jpg","/egg.jpg","/muffin.jpg"]} />
 
         
 
