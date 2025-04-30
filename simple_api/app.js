@@ -5,7 +5,7 @@ const expressSeverPort = 3000;
 
 const main = async () => {
     //retrieve all the bags
-    const response = await fetch(`http://localhost:${expressSeverPort}/bags/1`);
+    const response = await fetch(`http://localhost:${expressSeverPort}/bags/`);
     if (response.ok){
         //the server returns: return res.status(HttpStatusCodes.OK).json(bags);
         const responseBody = await response.text();

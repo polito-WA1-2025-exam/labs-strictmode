@@ -12,8 +12,11 @@ import {
 } from 'react-bootstrap';
 
 
-
-export default function Establishments() {
+/**
+ * Establishments component
+ * @param {*} props.establishmentsList: list of establishments to be displayed 
+ */
+export default function Establishments(props) {
   return (
       <>
         {/* Navigation */}
@@ -99,20 +102,43 @@ export default function Establishments() {
         
 
 
-      <Card style={{ width: '18rem' }}>
-        <Card.Img variant="top" src="holder.js/100px180" />
-        <Card.Body>
-          <Card.Title>Card Title</Card.Title>
-          <Card.Text>
-            Some quick example text to build on the card title and make up the
-            bulk of the card's content.
-          </Card.Text>
-          <Button variant="primary">Go somewhere</Button>
-        </Card.Body>
-      </Card>
+        {/* Establishments Cards */}
+        <Container className="mt-4">
+              <Row xs={1} md={2} lg={3} className="g-4">
+                  {props.establishmentsList.map((establishment) => (
+                      <Col key={establishment.id}>
+                        <EstablishmentCard establishment={establishment} />
+                      </Col>
+                  ))}
+              </Row>
+        </Container>
 
       </>
   );
 
 
+}
+
+/**
+ * single Establishment card
+ * @param {*} establishment: establishment to be displayed
+ */
+function EstablishmentCard({establishment}){
+  return (<>
+    <Card style={{ width: '18rem' }}>
+        <Card.Img variant="top" src="holder.js/100px180" />
+        <Card.Body>
+          <Card.Title>{establishment.name}</Card.Title>
+          <Card.Subtitle className="mb-2 text-muted">{establishment.estType}</Card.Subtitle>
+          <Card.Text>
+              Total bags put online: {establishment.bags.length}
+              <br />
+              Address: {establishment.address}
+          </Card.Text>
+          <Button variant="primary">See available bags!</Button>
+        </Card.Body>
+      </Card>
+
+  </>);
+ 
 }
