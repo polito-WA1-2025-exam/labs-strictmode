@@ -3,15 +3,17 @@ import sqlite3 from 'sqlite3';
 function connect(pathDB) {
     const sql3 = sqlite3.verbose();
     
-    const DB = new sql3.Database(pathDB, sqlite3.OPEN_READWRITE, (err) => {
-        if (err) {
-            console.error('ERROR connecting to the DB:', err.message);
-        } else {
-            console.log('SUCCESSFULLY Connected to DB');
-        }
+    return new Promise((resolve, reject) => {
+        const DB = new sql3.Database(pathDB, sqlite3.OPEN_READWRITE, (err) => {
+            if (err) {
+                console.error('ERROR connecting to the DB:', err.message);
+                reject(err);
+            } else {
+                console.log('SUCCESSFULLY Connected to DB');
+                resolve(DB);
+            }
+        });
     });
-
-    return DB; // Return the database connection if needed
 }
 
 function disconnect(DB) {
@@ -24,4 +26,4 @@ function disconnect(DB) {
     });
 }
 
-export {pathDbFromRepos, connect, disconnect};
+export {connect, disconnect};

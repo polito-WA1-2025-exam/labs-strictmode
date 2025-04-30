@@ -4,8 +4,8 @@ import {Bag, Establishment, BagItem} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs";
 import dayjs from "dayjs";
 //for timezone and utc when comparing dates with dayjs.now()
-import utc from 'dayjs/plugin/utc'; 
-import timezone from 'dayjs/plugin/timezone'; 
+import utc from 'dayjs/plugin/utc.js'; 
+import timezone from 'dayjs/plugin/timezone.js'; 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 

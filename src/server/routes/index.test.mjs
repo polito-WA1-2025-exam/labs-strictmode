@@ -1,5 +1,6 @@
 const request = require('supertest');
 import express from 'express';
+import { createServer } from '../server.mjs';
 import {User, Establishment, Bag, BagItem, CartItem, Reservation, Cart} from "../../models/index.mjs";
 import HttpStatusCodes from "../HttpStatusCodes.mjs"
 import {createUsersRouter, createEstablishmentsRouter, createBagsRouter, createReservationsRouter, createCartsRouter} from "./index.mjs";
@@ -74,30 +75,17 @@ const mockReservationRepo = {
     cancelReservation: vi.fn()
 };
 
-
-function setupApp() {
-    const app = express();
-    app.use(express.json());
-    const userRouter = createUsersRouter({ userRepo: mockUserRepo });
-    const establishmentRouter = createEstablishmentsRouter({ estRepo: mockEstablishmentRepo });
-    const bagRouter = createBagsRouter({ bagRepo: mockBagRepo, estRepo: mockEstablishmentRepo });
-    const cartRouter = createCartsRouter({ cartRepo: mockCartRepo, bagRepo: mockBagRepo });
-    const reservationRouter = createReservationsRouter({ cartRepo: mockCartRepo, resRepo: mockReservationRepo, bagRepo: mockBagRepo});
-    app.use('/users', userRouter);
-    app.use('/establishments', establishmentRouter);
-    app.use('/bags', bagRouter);
-    app.use('/carts', cartRouter);
-    app.use('/reservations', reservationRouter);
-
-    return app;
-}
-
-
 let app; 
 
 //The app gets refreshed before each test suite to have a clean server for each test
 beforeEach(() => {
-    app = setupApp(); 
+    app = createServer({
+        userRepo: mockUserRepo,
+        estRepo: mockEstablishmentRepo,
+        bagRepo: mockBagRepo,
+        cartRepo: mockCartRepo,
+        resRepo: mockReservationRepo
+    });
     vi.clearAllMocks(); 
 });
 
