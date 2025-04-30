@@ -9,14 +9,24 @@
 
 # Exercise "SurplusFood"
 
-## To start the server
+## To start the Express server
 ```sh
 npm install
 npm run migrate # inits the db for the first time
 npm run start
 ```
 
-## To run the tests
+## To start the React client
+```sh
+npm run dev
+```
+
+## To run the tests (db repos, server routes)
 ```sh
 npm run test
+```
+
+## To run just the server routes tests
+```sh
+npm run test:server
 ```
