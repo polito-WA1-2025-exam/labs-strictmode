@@ -6,23 +6,59 @@ import dayjs from 'dayjs';
  * A special request can be "no peanuts" or "no animal products (vegan)", for example.
  * Multiple CartItems can contain the same bag, but with different user personalizations.
  */
+
+
 export class CartItem {
     /**
      * Creates an instance of CartItem.
      * 
      * @constructor
-     * @param {Object} bag - The bag object containing items.
+     * @param {number} id - The ID of the cart item.
+     * @param {Object} bag - The bag associated with the cart item.
+     * @param {number} userId - The ID of the user who added the bag to the cart.
      * @param {Array<string>} [removedItems=[]] - An array of item IDs to be removed from the bag.
      */
-    constructor(bag, removedItems = []) {
+    constructor(id, bag, userId, removed = []) {
+        this.id = id;
         this.bag = bag;
+        this.userId = userId;
 
         this.removedItems = [];
-        for (let item of removedItems) {
-            this.removeItem(item);
+
+        if (removed.length > 0){
+
+            //also here check if contraints are satisfied:
+            if (this.bag.bagType !== Bag.TYPE_REGULAR) throw new Error('A non-regular bag cannot be personalized');
+            if (removed.length > 2) throw new Error('Cannot remove more than 2 items');
+
+
+            //check first that the ids in removed are actually in the bag:
+            for (const itemToBeRemoved of removed) {
+                //check cartItemId is the same as the right cartItem
+                if (itemToBeRemoved.cartItemId !== this.id) {
+                    throw new Error(`Wrong cartItemID`);
+                }
+
+                console.log("ITEM TO BE REMOVED: ", itemToBeRemoved);
+                if (!this.bag.items.some(bagItem => bagItem.id === itemToBeRemoved.bagItemId)) {
+                    throw new Error(`Item with ID ${itemToBeRemoved.bagItemId} is not in the bag`);
+                }
+            }
+
+            this.removedItems = removed.map(item => item.bagItemId);
         }
 
+        /*
+        for (let item of removed) {
+            console.log("Adding item to removedItems: ", item);
+            this.removeItem(item.bagItemId);
+        }
+        */
+
         this.addedAt = dayjs(); // Track cart addition time
+
+
+        //console.log("FINAL CART ITEM + REMOVED: ", this);
     }
 
     /**
@@ -37,9 +73,14 @@ export class CartItem {
     removeItem(itemId) {
         if (this.bag.bagType !== Bag.TYPE_REGULAR || this.removedItems.length >= 2)
             throw new Error('Cannot remove more items');
-        if (this.bag.items.some(item => item.itemId === itemId)) return;
 
-        this.removedItems = [...new Set([...this.removedItems, itemId])];
+        console.log("BAGGGGGGGGG: ", this.bag);
+
+
+        if (this.bag.items.some(item => item.itemId === itemId)) {
+            this.removedItems = [...new Set([...this.removedItems, itemId])];
+            console.log("Removed items: ", this.removedItems);
+        } 
     }
 }
 

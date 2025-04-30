@@ -11,24 +11,25 @@ export class Bag {
      * @param {number} id - Unique identifier for the bag.
      * @param {string} bagType - Type of the bag (e.g., "regular", "surprise").
      * @param {number} estId - The establishment ID associated with the bag.
-     * @param {number} size - "small", "medium", "large".
-     * @param {Array<string>} tags - Example: ["vegan", "gluten free"].
+     * @param {string} size - "small", "medium", "large".
+     * @param {string} tags - Comma separated, Example: "vegan, gluten-free".
      * @param {number} price - The price of the bag.
+     * @param {Array<Object>} items - Array of items in the bag.
      * @param {string} pickupTimeStart - The start time for pickup in ISO 8601 format.
      * @param {string} pickupTimeEnd - The end time for pickup in ISO 8601 format.
+     * @param {boolean} available
      */
-    constructor(id, bagType, estId, size, tags, price, pickupTimeStart, pickupTimeEnd, reservedBy = null) {
+    constructor(id, bagType, estId, size, tags, price, items, pickupTimeStart, pickupTimeEnd, available) {
         this.id = id;
         this.bagType = bagType;
         this.estId = estId;
         this.size = size;
         this.tags = tags;
         this.price = price; 
-        this.items = [];
-        this.pickupTimeStart = dayjs(pickupTimeStart);
-        this.pickupTimeEnd = dayjs(pickupTimeEnd);
-
-        this.reservedBy = reservedBy;
+        this.items = items;
+        this.pickupTimeStart = pickupTimeStart;
+        this.pickupTimeEnd = pickupTimeEnd;
+        this.available = available
     }
 
 

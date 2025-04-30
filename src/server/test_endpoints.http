@@ -127,13 +127,6 @@ GET http://localhost:3001/establishments/1
 
 ###
 
-#Get Estsblishment bags [GET Method]
-#http://localhost:3001/establishments/{ESTID}/bags
-GET http://localhost:3001/establishments/1/bags
-
-
-###
-
 #Delete an establishment by estId [DELETE Method]
 DELETE http://localhost:3001/establishments/1
 
@@ -149,7 +142,7 @@ Content-Type: application/json
 {
   "bagType": "regular",
   "estId": 1,
-  "size": "M",
+  "size": "medium",
   "tags": ["Pelle", "Nera"],
   "price": 10,
   "pickupTimeStart": "2021-12-01T10:00:00.000Z",
