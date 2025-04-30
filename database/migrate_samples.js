@@ -8,7 +8,9 @@ if (fs.existsSync(DEFAULT_PATH)) {
     console.log(`Deleted existing database at ${DEFAULT_PATH}`);
 }
 
-createDb(DEFAULT_PATH)
+
+//second parameter is to insert sample data if set to true!
+createDb(DEFAULT_PATH, true)
     .then(() => {
         console.log(`Database created at ${DEFAULT_PATH}`);
     })

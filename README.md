@@ -9,10 +9,12 @@
 
 # Exercise "SurplusFood"
 
-## To start the Express server
+## To set up the database and start the Express server
 ```sh
 npm install
-npm run migrate # inits the db for the first time
+# choose one of the two alternatives:
+npm run migrate         # inits the db for the first time
+npm run migrate:samples # inits te db for the first time and inserts sample data
 npm run start
 ```
 
@@ -26,7 +28,7 @@ npm run dev
 npm run test
 ```
 
-## To run just the server routes tests
+## To run just the Express server routes tests
 ```sh
 npm run test:server
 ```

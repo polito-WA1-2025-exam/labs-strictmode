@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { hashPassword } from '../src/server/crypto.mjs';
 
 // Get `__dirname` equivalent in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -8,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 // Create a new database or open an existing one
 
-export function createDb(dbPath) {
+export function createDb(dbPath, insertSampleDataParam = false) {
   let { promise, resolve, reject } = Promise.withResolvers();
   const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
@@ -34,10 +35,10 @@ export function createDb(dbPath) {
         // Create USER table
         db.run(`CREATE TABLE IF NOT EXISTS USER (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          email VARCHAR(20),
+          email VARCHAR(100),
           password VARCHAR(20),
-          assignedName VARCHAR(20),
-          familyName VARCHAR(20)
+          assignedName VARCHAR(100),
+          familyName VARCHAR(100)
         )`, handleError);
 
         // ESTABLISHMENT: Each record is an establishment that offers 0 or N bags to users.
@@ -113,14 +114,27 @@ export function createDb(dbPath) {
 
         console.log("Trying to commit...");
         // Commit the transaction
-        db.run('COMMIT', (err) => {
+        db.run('COMMIT', async (err) => {
           if (err) {
             console.error('Error committing transaction:', err.message);
             reject(err);
             return;
           }
           console.log('Database schema created successfully.');
-          resolve(db);
+          console.log('checking insertSampleData:', insertSampleDataParam);
+          if (insertSampleDataParam) {
+            try {
+              await insertSampleData(db);
+              resolve(db);
+            } catch (e) {
+              console.error('Error inserting sample data:', e.message);
+              db.run('ROLLBACK');
+              reject(e);
+            }
+
+          } else {
+            resolve(db);
+          }
         });
       });
     });
@@ -132,6 +146,53 @@ export function createDb(dbPath) {
       db.run('ROLLBACK');
       db.close();
     }
+  }
+
+  async function insertSampleData(db) {
+    return new Promise(async (resolveInsert, rejectInsert) => {
+      try {
+        db.run('BEGIN TRANSACTION');
+
+        const hashed = await hashPassword("123");
+        db.run(`INSERT INTO USER (email, password, assignedName, familyName) VALUES (?, ?, ?, ?)`,
+          ["test@gmail.com", hashed, "test", "test"], handleError);
+
+        db.run(`INSERT INTO ESTABLISHMENT (name, estType, address) VALUES (?, ?, ?)`,
+          ["testEstablishment", "testType", "testAddress"], function (err) {
+            if (err) return rejectInsert(err);
+
+            const estId = this.lastID;
+            db.run(`INSERT INTO BAG (estId, size, bagType, tags, price, pickupTimeStart, pickupTimeEnd, available)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [estId, "testSize", "testBagType", "testTags", 10.0, "2024-10-01", "2025-10-03", 1], function (err) {
+                if (err) return rejectInsert(err);
+
+                const bagId = this.lastID;
+                db.run(`INSERT INTO BAG_ITEM (bagId, name, quantity, measurementUnit)
+                        VALUES (?, ?, ?, ?)`,
+                  [bagId, "testItem", 1.0, "kg"], handleError);
+
+                db.run('COMMIT', (err) => {
+                  if (err) {
+                    console.error('Error committing sample data transaction:', err.message);
+                    db.run('ROLLBACK');
+                    rejectInsert(err);
+                  } else {
+                    console.log('Sample data inserted successfully.');
+                    resolveInsert();
+                  }
+                });
+              });
+          });
+
+      } catch (e) {
+        console.error('Error inserting sample data:', e.message);
+        db.run('ROLLBACK');
+        rejectInsert(e);
+      }
+    });
+
+
   }
 
   return promise;

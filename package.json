@@ -17,6 +17,7 @@
   "scripts": {
     "start": "node ./src/main.mjs",
     "migrate": "node ./database/migrate.js",
+    "migrate:samples": "node ./database/migrate_samples.js",
     "test": "vitest",
     "test:server": "vitest server"
   }
