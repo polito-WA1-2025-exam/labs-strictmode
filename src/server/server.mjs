@@ -18,7 +18,7 @@ export function createServer(repos) {
     // register json middleware to send data in json format
     server.use(express.json());
 
-    // register cors middleware to allow cross-origin requests
+    //register cors middleware to allow cross-origin requests by the React app
     //React appp runs on http://localhost:5173
     const ReactServerPort = 5173; 
     const corsOPtions = {
