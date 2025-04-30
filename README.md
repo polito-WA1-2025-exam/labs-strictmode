@@ -32,3 +32,8 @@ npm run test
 ```sh
 npm run test:server
 ```
+
+# To run the simple_api to fetch data from the Express server
+```sh
+npm run simple_api
+```
