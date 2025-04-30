@@ -763,6 +763,52 @@ describe('BagRepo', () => {
     });
 
 
+    test("should list all the available bags", async () => {
+        const newBag = {
+            bagType: 'big',
+            estId: createdEstablishment.id,
+            size: 'medium',
+            tags: 'gluten free, lactose free',
+            price: 10.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: true
+        }
+
+
+        //create a new bag
+        const createdBag = await bagsRepo.createBag(newBag);
+        expect(createdBag).toBeDefined();
+        expect(createdBag.id).toBeDefined();
+
+        //create a second bag
+        const newBag2 = {
+            bagType: 'big',
+            estId: createdEstablishment.id,
+            size: 'medium',
+            tags: 'gluten free, lactose free',
+            price: 10.99,
+            items: null, //items will be properly tested in the bagRepo Test Suite
+            pickupTimeStart: "2021-06-01", 
+            pickupTimeEnd: "2026-12-01",
+            available: false // Set to unavailable
+        }
+        //create the bag
+
+        const createdBag2 = await bagsRepo.createBag(newBag2);
+        expect(createdBag2).toBeDefined();
+        expect(createdBag2.id).toBeDefined();
+
+        const availableBags = await bagsRepo.listAvailable();
+        expect(availableBags).toBeDefined();
+        expect(availableBags).toHaveLength(1); // Only one bag should be available
+        expect(availableBags[0].id).toBe(createdBag.id); // The available bag should be the first one we created
+
+
+    });
+
+
 });
 
 //BagItem Repository Tests

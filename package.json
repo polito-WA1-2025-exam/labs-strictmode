@@ -20,6 +20,7 @@
     "migrate:samples": "node ./database/migrate_samples.js",
     "test": "vitest",
     "test:server": "vitest server",
+    "test:repos": "vitest repos",
     "simple_api": "cd simple_api && node index.js"
   }
 }

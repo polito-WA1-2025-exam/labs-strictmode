@@ -269,17 +269,18 @@ export class BagRepo {
      * @returns {Array<Bag>}
      */
     async listAvailable() {
-        let query = "SELECT * FROM BAG WHERE available = 1 AND DATE('now') > DATE(pickupTimeEnd)";
+        let query = "SELECT * FROM BAG WHERE available = 1 AND DATE('now') < DATE(pickupTimeEnd)";
         return new Promise((resolve, reject) => {
-            this.DB.all(query, [resolve, reject], (err, rows) => {
+            this.DB.all(query, [], async (err, rows) => {
                 if (err) {
                     console.error('error retriving all available bags', err.message);
                     reject(err);
                 } else {
                     let bag_list = [];
 
-                    if (rows) {
-                        rows.forEach(async row => {
+                    if (rows && rows.length > 0) {
+                        console.log("ROWS: ", rows);
+                        for (const row of rows) {
                             let id = parseInt(row.id, 10);
                             let estId = parseInt(row.estId, 10);
                             let size = row.size;
@@ -299,7 +300,7 @@ export class BagRepo {
 
                                 bag_list.push(fetchedBag);
                             }
-                        })
+                        }
                         resolve(bag_list);
                     } else {
                         resolve(null);
