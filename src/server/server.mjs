@@ -1,5 +1,6 @@
 import express from "express";
 import morgan from 'morgan';
+import cors from 'cors';
 
 import {createBagsRouter} from "./routes/bags.mjs";
 import {createUsersRouter} from "./routes/users.mjs";
@@ -16,6 +17,18 @@ export function createServer(repos) {
     server.use(morgan("dev"));
     // register json middleware to send data in json format
     server.use(express.json());
+
+    // register cors middleware to allow cross-origin requests
+    //React appp runs on http://localhost:5173
+    const ReactServerPort = 5173; 
+    const corsOPtions = {
+        origin: `http://localhost:${ReactServerPort}`, // allow requests just from this origin
+        methods: ["GET", "POST", "PUT", "DELETE"], // allow all methods
+        allowedHeaders: ["Content-Type", "Authorization"], // allow all headers
+        optionSuccessStatus: 200 //will be useful with React
+    };
+
+    server.use(cors(corsOPtions)); 
 
 
     /* home - GET*/
