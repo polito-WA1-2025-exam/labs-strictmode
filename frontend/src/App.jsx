@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, useNavigate } from 'react-router-dom';
-import {Home, LoginForm, Cart, Establishments} from "./components/index.js";
+import {Home, LoginForm, Cart, Establishments, UserInfo, ReservationHistory} from "./components/index.js";
 import API from "./API";
 
 
@@ -45,10 +45,11 @@ function Main() {
             <Route path = "/login" element = {<LoginForm/>}></Route>
             <Route path = "/cart" element = {<Cart/>}></Route>
             <Route path = "/establishments" element = {<Establishments establishmentsList = {establishmentsList}/>}></Route>
+            <Route path="/userinfo" element={<UserInfo/>}></Route>
+            <Route path="/reservationhistory" element={<ReservationHistory/>}></Route>
             <Route path = "*" element = {<p>404 Not Found</p>}></Route>
         </Routes>
     )
-
 }
 
 
