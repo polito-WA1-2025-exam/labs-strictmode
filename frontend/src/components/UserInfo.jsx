@@ -1,19 +1,21 @@
 import {PersonCircle, GooglePlay} from 'react-bootstrap-icons'
-import "../css/User.css"
+import "../css/UserInfo.css"
 import { useState } from 'react'
 
 export default function UserInfo() {
     return (
-        <div className='vertical-container-div'>
-            <div className='horizontal-container'>
-                <h3>Surplus Food</h3>
-                <GooglePlay />
+        <div className='extern-container'>
+            <div className='inner-container'>
+                <div className='horizontal-container'>
+                    <h3>Surplus Food</h3>
+                    <GooglePlay />
+                </div>
+                <div className='horizontal-container-username'>
+                    <PersonCircle size={150}/>
+                    <h3>Username</h3>
+                </div>
+                <Form1 assignedName="Michele" familyName="Carloni" email="myemail@gmail.com" password="password"/>
             </div>
-            <div className='horizontal-container'>
-                <h3>Username</h3>
-                <PersonCircle />
-            </div>
-            <Form1 assignedName="Michele" familyName="Carloni" email="carlonimchele3008@gmail.com" password="password"/>
         </div>
     )
 }
@@ -88,7 +90,7 @@ function Form1(props) {
 
     return(
         <div>
-            <form className='vertical-container'>
+            <form className='form-container'>
                 <input type="text" value={assignedName} readOnly={!isEditable} onChange={onChangeAssignedName} />
                 <input type="text" value={familyName} readOnly={!isEditable} onChange={onChangeFamilyName}/>
                 <input type="text" value={email} readOnly={!isEditable} onChange={onChangeEmail}/>
