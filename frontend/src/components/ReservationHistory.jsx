@@ -1,4 +1,4 @@
-function ReservationHistory() {
+export default function ReservationHistory() {
     return(
         <>
         </>

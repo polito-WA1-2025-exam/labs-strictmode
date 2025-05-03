@@ -2,7 +2,7 @@ import {PersonCircle, GooglePlay} from 'react-bootstrap-icons'
 import "../css/User.css"
 import { useState } from 'react'
 
-function UserInfo() {
+export default function UserInfo() {
     return (
         <div className='vertical-container-div'>
             <div className='horizontal-container'>

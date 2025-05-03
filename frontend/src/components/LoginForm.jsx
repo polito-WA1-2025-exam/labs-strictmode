@@ -8,7 +8,7 @@ import validator from 'validator';
  * @param {*} props.loginCbk: callback function to be called to perform the actual login
  * @returns 
  */
-function LoginForm(props) {
+export default function LoginForm(props) {
     
     //states for email and password set from the form
     const [email, setEmail] = useState("mail@address.com");
@@ -120,5 +120,3 @@ function LoginForm(props) {
         </Container>
         );
 };
-
-export default LoginForm;
